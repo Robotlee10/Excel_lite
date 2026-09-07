@@ -3,220 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cashier POS Browser Interface</title>
+    <title>Enterprise Cashier POS Terminal</title>
     <style>
         :root {
-            --bg-color: #f8fafc;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
             --success: #16a34a;
             --success-hover: #15803d;
-            --text-main: #1e293b;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --text-main: #0f172a;
             --text-muted: #64748b;
-            --border: #e2e8f0;
-            --warning: #eab308;
+            --border: #cbd5e1;
+            --warning: #ca8a04;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: var(--bg-color); color: var(--text-main); padding: 2rem 1rem; line-height: 1.5; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 1.5rem; line-height: 1.5; }
         
-        .header { text-align: center; margin-bottom: 2rem; position: relative; }
-        .header h1 { font-size: 1.875rem; font-weight: 700; color: #0f172a; }
-        .header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; }
+        .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+        .top-bar h1 { font-size: 1.5rem; font-weight: 700; color: #0f172a; }
 
+        .status-container { display: flex; align-items: center; gap: 0.75rem; }
         .status-badge {
             display: inline-flex;
             align-items: center;
             gap: 0.375rem;
-            padding: 0.25rem 0.75rem;
+            padding: 0.35rem 0.85rem;
             border-radius: 9999px;
-            font-size: 0.75rem;
+            font-size: 0.8rem;
             font-weight: 600;
-            margin-top: 0.5rem;
         }
-        .status-online { background-color: #dcfce7; color: #166534; }
-        .status-offline { background-color: #fef9c3; color: #854d0e; }
+        .status-online { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .status-offline { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
 
-        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; }
-        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 1.5rem; }
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
 
-        .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+        .sidebar { display: flex; flex-direction: column; gap: 1.25rem; }
 
-        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
-        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 0.5rem; flex-wrap: wrap; }
-        .card h2 { font-size: 1.125rem; font-weight: 600; }
-        .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .card h2 { font-size: 1.1rem; font-weight: 600; }
 
-        .toggle-btn { background: none; border: none; font-size: 0.85rem; color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline; }
+        .toggle-btn { background: none; border: none; font-size: 0.85rem; color: var(--primary); font-weight: 600; cursor: pointer; }
 
-        .form-group { margin-bottom: 0.85rem; }
-        label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.25rem; color: #334155; }
-        input[type="text"], input[type="number"], select { width: 100%; padding: 0.5rem 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; background-color: #fff; }
-        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
-
-        .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: #334155; }
-        .checkbox-label input { width: 16px; height: 16px; cursor: pointer; }
+        .form-group { margin-bottom: 0.75rem; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.25rem; color: #334155; text-transform: uppercase; letter-spacing: 0.025em; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 0.5rem 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.9rem; background-color: #fff; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
-        .btn { border: none; border-radius: 6px; padding: 0.625rem 1rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; }
-        .btn-primary { background-color: var(--primary); color: white; width: 100%; margin-top: 0.5rem; }
+        .btn { border: none; border-radius: 6px; padding: 0.625rem 1rem; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; margin-top: 0.25rem; }
         .btn-primary:hover { background-color: var(--primary-hover); }
         .btn-success { background-color: var(--success); color: white; }
         .btn-success:hover { background-color: var(--success-hover); }
-        .btn-secondary { background-color: #475569; color: white; width: 100%; }
+        .btn-secondary { background-color: #475569; color: white; }
         .btn-secondary:hover { background-color: #334155; }
-        
-        .action-btn { background: none; border: none; cursor: pointer; padding: 0.375rem; border-radius: 4px; color: var(--primary); transition: background-color 0.2s; }
-        .action-btn:hover { background-color: #eff6ff; }
-        .action-btn svg { width: 18px; height: 18px; display: block; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        .btn-danger:hover { background-color: var(--danger-hover); }
 
-        .table-container { overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 8px; }
+        .table-container { overflow-x: auto; margin-top: 0.75rem; border: 1px solid var(--border); border-radius: 8px; }
         table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
-        th { background-color: #f1f5f9; padding: 0.75rem 1rem; font-weight: 600; color: #475569; border-bottom: 1px solid var(--border); }
+        th { background-color: #f8fafc; padding: 0.75rem 1rem; font-weight: 600; color: #475569; border-bottom: 1px solid var(--border); }
         td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
         tr:last-child td { border-bottom: none; }
         tr:hover { background-color: #f8fafc; }
 
-        .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem; }
-
-        /* Sync Status Column Indicator */
-        .sync-badge { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+        .sync-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
         .synced-true { background-color: var(--success); }
         .synced-false { background-color: var(--warning); }
 
         .hidden-form { display: none; }
 
-        /* Thermal Receipt Template Styles */
+        /* Printable Receipt Thermal Design */
         #receiptContainer { display: none; }
 
         .receipt-card {
-            width: 320px;
+            width: 300px;
             background: #ffffff;
-            padding: 20px 18px 30px;
-            color: #000000;
-            font-size: 13px;
-            line-height: 1.3;
-            font-family: 'Courier New', Courier, monospace, Arial, sans-serif;
+            padding: 15px;
+            color: #000;
+            font-size: 12px;
+            font-family: 'Courier New', Courier, monospace;
             margin: 0 auto;
         }
 
-        .receipt-card * {
-            font-family: 'Courier New', Courier, monospace, Arial, sans-serif !important;
-        }
-
-        .store-header { text-align: center; margin-bottom: 12px; }
-        .store-title { font-size: 15px; font-weight: bold; margin-bottom: 3px; }
-        .store-address { font-size: 12px; margin-bottom: 2px; }
-        .store-phone { font-size: 12px; margin-bottom: 6px; }
-        .sale-type { font-size: 13px; font-weight: normal; }
-
-        .barcode-container { text-align: center; margin: 12px 0; }
-        .barcode {
-            width: 100%;
-            height: 38px;
-            background: repeating-linear-gradient(
-                90deg,
-                #000 0px, #000 1px,
-                #fff 1px, #fff 2px,
-                #000 2px, #000 5px,
-                #fff 5px, #fff 7px,
-                #000 7px, #000 8px,
-                #fff 8px, #fff 11px,
-                #000 11px, #000 14px,
-                #fff 14px, #fff 15px,
-                #000 15px, #000 17px,
-                #fff 17px, #fff 20px
-            );
-        }
-
-        .details-grid { display: grid; grid-template-columns: 110px 1fr; margin-bottom: 8px; }
-        .details-grid div { padding: 1px 0; }
-
-        .divider { border-bottom: 2px solid #000000; margin: 6px 0; }
-
-        .item-list { margin: 8px 0; }
-        .item-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
-        .item-description { max-width: 140px; word-wrap: break-word; }
-        .item-qty { text-align: right; padding-right: 10px; }
-        .item-price { text-align: right; min-width: 60px; }
-
-        .totals-section { margin: 6px 0; }
-        .total-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
-        .grand-total { font-weight: bold; margin-top: 2px; }
-
-        .special-note { margin-top: 10px; font-size: 12px; }
-        .promo-footer { margin-top: 30px; text-align: center; font-weight: bold; font-size: 12px; line-height: 1.4; }
+        .receipt-card * { font-family: 'Courier New', Courier, monospace !important; }
+        .store-header { text-align: center; margin-bottom: 10px; }
+        .store-title { font-size: 14px; font-weight: bold; }
+        .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
+        .item-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
 
         @media print {
             @page { size: auto; margin: 0; }
             body * { visibility: hidden; }
             #receiptContainer, #receiptContainer * { visibility: visible; }
-            #receiptContainer {
-                display: flex !important;
-                justify-content: center;
-                align-items: flex-start;
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100vw;
-                min-height: 100vh;
-                background: white;
-                padding-top: 20px;
-            }
+            #receiptContainer { display: flex !important; justify-content: center; position: absolute; left: 0; top: 0; width: 100vw; background: white; padding-top: 10px; }
         }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h1>Cashier Data Processing System</h1>
-        <p>Record sales transactions and print POS receipts locally</p>
-        <span id="networkStatus" class="status-badge status-online">● System Online</span>
+    <div class="top-bar">
+        <div>
+            <h1>Cashier POS Terminal</h1>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Press <kbd>F2</kbd> anywhere to print selected items receipt</p>
+        </div>
+        <div class="status-container">
+            <span id="networkStatus" class="status-badge status-online">● Online</span>
+            <span id="pendingCount" class="status-badge status-offline">0 Unsynced</span>
+        </div>
     </div>
     
     <div class="container">
         <div class="sidebar">
-            <!-- Store Settings Form -->
+            <!-- Terminal Config -->
             <div class="card">
-                <div class="card-header" style="margin-bottom: 0;">
-                    <h2>Store Settings</h2>
+                <div class="card-header">
+                    <h2>Store Configuration</h2>
                     <button type="button" class="toggle-btn" id="toggleSettingsBtn" onclick="toggleStoreSettings()">Hide</button>
                 </div>
                 
-                <form id="storeSettingsForm" style="margin-top: 1.25rem;">
+                <form id="storeSettingsForm">
                     <div class="form-group">
                         <label for="storeName">Store Name</label>
-                        <input type="text" id="storeName" value="New Store X1" required>
+                        <input type="text" id="storeName" value="Central Mart Terminal" required>
                     </div>
-
                     <div class="form-group">
-                        <label for="storeAddress">Store Address</label>
-                        <input type="text" id="storeAddress" value="Some address, fd, 23rf" required>
+                        <label for="storeAddress">Address</label>
+                        <input type="text" id="storeAddress" value="Plot 12 Commercial Way, Lagos" required>
                     </div>
-
                     <div class="form-group">
-                        <label for="storePhone">Store Phone Number</label>
-                        <input type="text" id="storePhone" value="+2348000000000" required>
+                        <label for="salesPerson">Cashier Name</label>
+                        <input type="text" id="salesPerson" value="Admin" required>
                     </div>
-
-                    <div class="form-group">
-                        <label for="salesPerson">Sales Person</label>
-                        <input type="text" id="salesPerson" value="Admin Admin" required>
-                    </div>
-
-                    <button type="submit" class="btn btn-secondary">Save Store Settings</button>
+                    <button type="submit" class="btn btn-secondary" style="width: 100%;">Save Config</button>
                 </form>
             </div>
 
-            <!-- Transaction Input Form -->
+            <!-- Item Entry Form -->
             <div class="card">
-                <h2>New Transaction</h2>
-                <form id="cashierForm">
+                <h2>Scan / Add Item</h2>
+                <form id="cashierForm" style="margin-top: 0.75rem;">
                     <div class="form-group">
-                        <label for="itemName">Item Name</label>
-                        <input type="text" id="itemName" placeholder="e.g. Red Banana" required>
+                        <label for="itemName">Item Name / Barcode</label>
+                        <input type="text" id="itemName" placeholder="Scan or enter name" autofocus required>
                     </div>
 
                     <div class="form-group">
@@ -224,123 +160,80 @@
                         <select id="category">
                             <option value="Groceries">Groceries</option>
                             <option value="Electronics">Electronics</option>
-                            <option value="Clothing">Clothing</option>
-                            <option value="Other">Other</option>
+                            <option value="Apparel">Apparel</option>
+                            <option value="General">General</option>
                         </select>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="quantity">Quantity</label>
-                            <input type="number" id="quantity" step="0.01" min="0.01" value="1" required>
+                            <label for="quantity">Qty</label>
+                            <input type="number" id="quantity" step="1" min="1" value="1" required>
                         </div>
                         <div class="form-group">
-                            <label for="price">Unit Price (₦)</label>
+                            <label for="price">Price (₦)</label>
                             <input type="number" id="price" step="0.01" min="0" placeholder="0.00" required>
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-primary">Add Record</button>
+                    <button type="submit" class="btn btn-primary">Add Item to Cart</button>
                 </form>
             </div>
         </div>
 
-        <!-- Data Table -->
+        <!-- Sales Log -->
         <div class="card">
             <div class="card-header">
-                <h2>Processed Records</h2>
-                <div class="header-actions">
-                    <button type="button" class="btn btn-secondary" style="width: auto;" onclick="printReceipt('selected')">Generate Receipt</button>
-                    <button type="button" class="btn btn-success" style="width: auto;" onclick="exportToCSV()">Export CSV</button>
+                <h2>Transaction History</h2>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="button" class="btn btn-secondary" onclick="printReceipt('selected')">Print Selected (F2)</button>
+                    <button type="button" class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+                    <button type="button" class="btn btn-danger" onclick="clearLocalBuffer()">Clear Queue</button>
                 </div>
             </div>
 
-            <!-- Customer Input Section -->
-            <div style="background-color: #f1f5f9; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem;">
-                <label class="checkbox-label">
-                    <input type="checkbox" id="includeCustomerName" onchange="toggleCustomerInput()">
-                    Include Customer Name on Receipt
-                </label>
-                <div id="customerInputGroup" class="hidden-form" style="margin-top: 0.5rem;">
-                    <input type="text" id="receiptCustomerName" placeholder="Enter Customer Name (e.g. Walk-In / John Doe)">
-                </div>
-            </div>
-            
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 40px; text-align: center;">
-                                <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
-                            </th>
+                            <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
                             <th style="width: 20px;"></th>
-                            <th>Category</th>
+                            <th>Receipt #</th>
                             <th>Item Name</th>
                             <th>Qty</th>
                             <th>Price</th>
                             <th>Total</th>
-                            <th style="text-align: center;">Single</th>
                         </tr>
                     </thead>
                     <tbody id="dataTableBody"></tbody>
                 </table>
-                <div id="emptyState" class="empty-state">No transactions recorded yet.</div>
             </div>
         </div>
     </div>
 
-    <!-- Thermal Receipt Printable Template -->
+    <!-- Thermal Print Layout -->
     <div id="receiptContainer">
         <div class="receipt-card">
             <div class="store-header">
-                <div class="store-title" id="receiptStoreName">New Store X1</div>
-                <div class="store-address" id="receiptStoreAddress">Some address</div>
-                <div class="store-phone" id="receiptStorePhone">Phone: +2348000000000</div>
-                <div class="sale-type">SALE</div>
+                <div class="store-title" id="receiptStoreName">Central Mart</div>
+                <div id="receiptStoreAddress">Lagos</div>
+                <div>SALE RECEIPT</div>
             </div>
-
-            <div class="barcode-container">
-                <div class="barcode"></div>
-            </div>
-
-            <div class="details-grid">
-                <div>Order #:</div>
-                <div id="receiptOrderNum">010900269558</div>
-                
-                <div id="receiptSoldToLabel" class="hidden-form">Sold To:</div>
-                <div id="receiptSoldToValue" class="hidden-form">Walk-In</div>
-
-                <div>Order Date:</div>
-                <div id="receiptDate">03/31/26</div>
-                <div>Order Time:</div>
-                <div id="receiptTime">1:03:23 PM</div>
-                <div>Sales Person:</div>
-                <div id="receiptSalesPerson">Admin Admin</div>
-                <div>Order type:</div>
-                <div>Quick Sale</div>
-            </div>
-
             <div class="divider"></div>
-            <div class="item-list" id="receiptItemList"></div>
+            <div id="receiptDate"></div>
+            <div id="receiptCashier"></div>
             <div class="divider"></div>
-
-            <div class="totals-section">
-                <div class="total-row grand-total">
-                    <div style="margin-left: auto; margin-right: 25px;">Total</div>
-                    <div id="receiptGrandTotal">₦0.00</div>
-                </div>
-            </div>
-
-            <div class="special-note">Special package</div>
-            <div class="promo-footer">
-                30% off your next order –<br>
-                if you order through us with code LOCAL!
+            <div id="receiptItemList"></div>
+            <div class="divider"></div>
+            <div class="item-row" style="font-weight: bold;">
+                <div>GRAND TOTAL:</div>
+                <div id="receiptGrandTotal">₦0.00</div>
             </div>
         </div>
     </div>
 
     <script>
-        // --- IndexedDB & Offline Storage Setup ---
+        // IndexedDB Initialization
         function openIndexedDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open("POSLocalDB", 1);
@@ -356,82 +249,49 @@
             });
         }
 
-        // --- Store Settings Engine ---
         let storeSettings = JSON.parse(localStorage.getItem('cashier_store_settings')) || {
-            storeName: "New Store X1",
-            storeAddress: "Some address, fd, 23rf",
-            storePhone: "+2348000000000",
-            salesPerson: "Admin Admin"
+            storeName: "Central Mart Terminal",
+            storeAddress: "Plot 12 Commercial Way, Lagos",
+            salesPerson: "Admin"
         };
 
         function toggleStoreSettings() {
             const form = document.getElementById('storeSettingsForm');
             const btn = document.getElementById('toggleSettingsBtn');
-            if (form.classList.contains('hidden-form')) {
-                form.classList.remove('hidden-form');
-                btn.innerText = 'Hide';
-            } else {
-                form.classList.add('hidden-form');
-                btn.innerText = 'Show';
-            }
+            form.classList.toggle('hidden-form');
+            btn.innerText = form.classList.contains('hidden-form') ? 'Show' : 'Hide';
         }
 
-        function toggleCustomerInput() {
-            const checkbox = document.getElementById('includeCustomerName');
-            const group = document.getElementById('customerInputGroup');
-            group.classList.toggle('hidden-form', !checkbox.checked);
-        }
-
-        function loadStoreSettings() {
-            document.getElementById('storeName').value = storeSettings.storeName;
-            document.getElementById('storeAddress').value = storeSettings.storeAddress;
-            document.getElementById('storePhone').value = storeSettings.storePhone;
-            document.getElementById('salesPerson').value = storeSettings.salesPerson;
-        }
-
-        document.getElementById('storeSettingsForm').addEventListener('submit', function(e) {
+        document.getElementById('storeSettingsForm').addEventListener('submit', (e) => {
             e.preventDefault();
             storeSettings = {
                 storeName: document.getElementById('storeName').value,
                 storeAddress: document.getElementById('storeAddress').value,
-                storePhone: document.getElementById('storePhone').value,
                 salesPerson: document.getElementById('salesPerson').value
             };
             localStorage.setItem('cashier_store_settings', JSON.stringify(storeSettings));
-            alert("Store settings saved successfully!");
+            alert("Settings updated!");
         });
 
-        // --- Transaction & Sync Handling ---
-        async function addTransaction(event) {
-            event.preventDefault();
-
-            const quantity = parseFloat(document.getElementById('quantity').value);
+        // Add Transaction & Auto-Focus scanner field
+        async function addTransaction(e) {
+            e.preventDefault();
+            const qty = parseFloat(document.getElementById('quantity').value);
             const price = parseFloat(document.getElementById('price').value);
-            const total = quantity * price;
+            const total = qty * price;
 
             const record = {
                 client_uuid: crypto.randomUUID(),
-                receipt_number: "POS-" + String(Math.floor(100000000000 + Math.random() * 900000000000)),
-                cashier_id: 1,
+                receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
                 item_name: document.getElementById('itemName').value,
                 category: document.getElementById('category').value,
-                quantity: quantity,
+                quantity: qty,
                 price: price,
                 subtotal: total,
-                tax_amount: 0.00,
-                discount_amount: 0.00,
                 grand_total: total,
-                payment_method: "cash",
-                amount_paid: total,
-                change_given: 0.00,
                 created_at: new Date().toISOString(),
                 synced: false,
-                items: [{
-                    product_id: 1,
-                    quantity: quantity,
-                    unit_price: price,
-                    subtotal: total
-                }]
+                items: [{ product_id: 1, quantity: qty, unit_price: price, subtotal: total }]
             };
 
             const db = await openIndexedDB();
@@ -440,6 +300,7 @@
 
             document.getElementById('cashierForm').reset();
             document.getElementById('quantity').value = "1";
+            document.getElementById('itemName').focus(); // Auto-focus for continuous scanner usage
 
             renderTable();
             syncOfflineOrders();
@@ -459,54 +320,44 @@
         async function renderTable() {
             const transactions = await getLocalOrders();
             const tbody = document.getElementById('dataTableBody');
-            const emptyState = document.getElementById('emptyState');
             tbody.innerHTML = '';
 
-            if (transactions.length === 0) {
-                emptyState.style.display = 'block';
-                return;
-            }
+            let unsyncedCount = 0;
 
-            emptyState.style.display = 'none';
             transactions.forEach(item => {
+                if (!item.synced) unsyncedCount++;
                 const row = `<tr>
-                    <td style="text-align: center;">
-                        <input type="checkbox" class="item-checkbox" value="${item.client_uuid}">
-                    </td>
-                    <td style="text-align: center;">
-                        <span class="sync-badge ${item.synced ? 'synced-true' : 'synced-false'}" title="${item.synced ? 'Synced to PostgreSQL' : 'Stored Locally (Pending Sync)'}"></span>
-                    </td>
-                    <td>${item.category}</td>
+                    <td style="text-align: center;"><input type="checkbox" class="item-checkbox" value="${item.client_uuid}"></td>
+                    <td style="text-align: center;"><span class="sync-dot ${item.synced ? 'synced-true' : 'synced-false'}"></span></td>
+                    <td>${item.receipt_number}</td>
                     <td>${item.item_name}</td>
-                    <td>x ${item.quantity}</td>
+                    <td>${item.quantity}</td>
                     <td>₦${item.price.toFixed(2)}</td>
                     <td><strong>₦${item.grand_total.toFixed(2)}</strong></td>
-                    <td style="text-align: center;">
-                        <button class="action-btn" title="Download Receipt" onclick="printReceipt('${item.client_uuid}')">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                              <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
-                            </svg>
-                        </button>
-                    </td>
                 </tr>`;
                 tbody.innerHTML += row;
             });
+
+            document.getElementById('pendingCount').innerText = `${unsyncedCount} Unsynced`;
         }
 
         async function syncOfflineOrders() {
             if (!navigator.onLine) {
-                updateNetworkBadge(false);
+                document.getElementById('networkStatus').className = 'status-badge status-offline';
+                document.getElementById('networkStatus').innerText = '● Offline Mode';
                 return;
             }
 
-            updateNetworkBadge(true);
+            document.getElementById('networkStatus').className = 'status-badge status-online';
+            document.getElementById('networkStatus').innerText = '● Online';
+
             const db = await openIndexedDB();
             const tx = db.transaction("orders", "readonly");
             const index = tx.objectStore("orders").index("synced");
 
-            const unsyncedOrders = await new Promise((resolve) => {
+            const unsyncedOrders = await new Promise((res) => {
                 const req = index.getAll(false);
-                req.onsuccess = () => resolve(req.result);
+                req.onsuccess = () => res(req.result);
             });
 
             if (unsyncedOrders.length === 0) return;
@@ -515,21 +366,18 @@
                 const response = await fetch("/api/v1/sync/orders", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(unsyncedOrders),
+                    body: JSON.stringify(unsyncedOrders)
                 });
 
                 const result = await response.json();
-
                 if (response.ok && result.synced_uuids) {
                     const writeTx = db.transaction("orders", "readwrite");
                     const store = writeTx.objectStore("orders");
-
                     for (const uuid of result.synced_uuids) {
-                        const item = await new Promise((res) => {
+                        const item = await new Promise((r) => {
                             const req = store.get(uuid);
-                            req.onsuccess = () => res(req.result);
+                            req.onsuccess = () => r(req.result);
                         });
-
                         if (item) {
                             item.synced = true;
                             store.put(item);
@@ -537,134 +385,72 @@
                     }
                     renderTable();
                 }
-            } catch (error) {
-                console.log("Backend offline or unreachable, retaining local buffer.");
+            } catch (err) {
+                console.log("Backend offline; transactions queued in browser.");
             }
         }
 
-        function updateNetworkBadge(isOnline) {
-            const badge = document.getElementById('networkStatus');
-            if (isOnline) {
-                badge.className = 'status-badge status-online';
-                badge.innerText = '● System Online';
-            } else {
-                badge.className = 'status-badge status-offline';
-                badge.innerText = '● Offline Mode (Saving Locally)';
-            }
+        function toggleSelectAll(master) {
+            document.querySelectorAll('.item-checkbox').forEach(cb => cb.checked = master.checked);
         }
 
-        function toggleSelectAll(masterCheckbox) {
-            const checkboxes = document.querySelectorAll('.item-checkbox');
-            checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
-        }
-
-        async function printReceipt(targetMode) {
+        async function printReceipt() {
+            const selected = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
             const transactions = await getLocalOrders();
-            let itemsToPrint = [];
-
-            if (targetMode === 'selected') {
-                const selectedBoxes = document.querySelectorAll('.item-checkbox:checked');
-                const selectedUuids = Array.from(selectedBoxes).map(cb => cb.value);
-                itemsToPrint = transactions.filter(item => selectedUuids.includes(item.client_uuid));
-            } else {
-                itemsToPrint = transactions.filter(item => item.client_uuid === targetMode);
-            }
+            const itemsToPrint = transactions.filter(t => selected.includes(t.client_uuid));
 
             if (itemsToPrint.length === 0) {
-                alert("Please select at least one item using the checkboxes to generate a receipt.");
+                alert("Select items using checkboxes to print receipt.");
                 return;
             }
 
-            const now = new Date();
-            const dateStr = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
-            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
-
-            const firstItem = itemsToPrint[0];
-
             document.getElementById('receiptStoreName').innerText = storeSettings.storeName;
             document.getElementById('receiptStoreAddress').innerText = storeSettings.storeAddress;
-            document.getElementById('receiptStorePhone').innerText = "Phone: " + storeSettings.storePhone;
+            document.getElementById('receiptCashier').innerText = "Cashier: " + storeSettings.salesPerson;
+            document.getElementById('receiptDate').innerText = "Date: " + new Date().toLocaleString();
 
-            document.getElementById('receiptOrderNum').innerText = firstItem.receipt_number;
-            document.getElementById('receiptDate').innerText = dateStr;
-            document.getElementById('receiptTime').innerText = timeStr;
-            document.getElementById('receiptSalesPerson').innerText = storeSettings.salesPerson;
-
-            const includeCustomer = document.getElementById('includeCustomerName').checked;
-            const customerNameInput = document.getElementById('receiptCustomerName').value.trim();
-            const labelEl = document.getElementById('receiptSoldToLabel');
-            const valEl = document.getElementById('receiptSoldToValue');
-
-            if (includeCustomer) {
-                labelEl.classList.remove('hidden-form');
-                valEl.classList.remove('hidden-form');
-                valEl.innerText = customerNameInput || 'Walk-In';
-            } else {
-                labelEl.classList.add('hidden-form');
-                valEl.classList.add('hidden-form');
-            }
-
-            const receiptItemList = document.getElementById('receiptItemList');
-            receiptItemList.innerHTML = '';
-
+            const listContainer = document.getElementById('receiptItemList');
+            listContainer.innerHTML = '';
             let grandTotal = 0;
 
             itemsToPrint.forEach(item => {
                 grandTotal += item.grand_total;
-                let itemHtml = `
+                listContainer.innerHTML += `
                     <div class="item-row">
-                        <div class="item-description">${item.item_name}</div>
-                        <div class="item-qty">x ${item.quantity}</div>
-                        <div class="item-price">₦${item.grand_total.toFixed(2)}</div>
+                        <div>${item.item_name} (x${item.quantity})</div>
+                        <div>₦${item.grand_total.toFixed(2)}</div>
                     </div>
-                    <div style="margin-bottom: 4px;">Sale</div>
                 `;
-                receiptItemList.innerHTML += itemHtml;
             });
 
             document.getElementById('receiptGrandTotal').innerText = `₦${grandTotal.toFixed(2)}`;
             window.print();
         }
 
-        async function exportToCSV() {
-            const transactions = await getLocalOrders();
-            if (transactions.length === 0) {
-                alert("No data available to export.");
-                return;
+        async function clearLocalBuffer() {
+            if (confirm("Clear all locally stored transactions?")) {
+                const db = await openIndexedDB();
+                const tx = db.transaction("orders", "readwrite");
+                tx.objectStore("orders").clear();
+                renderTable();
             }
-
-            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price (NGN)", "Total (NGN)", "Sales Person", "Synced Status"];
-            const rows = transactions.map(item => [
-                `"${item.receipt_number}"`,
-                `"${item.category}"`,
-                `"${item.item_name.replace(/"/g, '""')}"`,
-                item.quantity,
-                item.price.toFixed(2),
-                item.grand_total.toFixed(2),
-                `"${storeSettings.salesPerson}"`,
-                item.synced ? "Synced" : "Pending"
-            ]);
-
-            const csvContent = "data:text/csv;charset=utf-8," 
-                + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `cashier_data_${new Date().toISOString().slice(0,10)}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
 
-        window.addEventListener("online", syncOfflineOrders);
-        window.addEventListener("offline", () => updateNetworkBadge(false));
+        // F2 Keyboard Shortcut for Fast Printing
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'F2') {
+                e.preventDefault();
+                printReceipt();
+            }
+        });
 
-        window.onload = function() {
-            loadStoreSettings();
+        window.addEventListener("online", syncOfflineOrders);
+        window.addEventListener("offline", syncOfflineOrders);
+
+        window.onload = () => {
             renderTable();
             syncOfflineOrders();
-            setInterval(syncOfflineOrders, 30000);
+            setInterval(syncOfflineOrders, 20000);
         };
     </script>
 </body>
