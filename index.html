@@ -24,8 +24,10 @@
         .header h1 { font-size: 1.875rem; font-weight: 700; color: #0f172a; }
         .header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; }
 
-        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 1.5rem; }
+        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; }
         @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+
+        .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
 
         .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 0.5rem; flex-wrap: wrap; }
@@ -60,7 +62,7 @@
 
         .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem; }
 
-        /* Thermal Receipt Template Styles (Exact Match) */
+        /* Thermal Receipt Template Styles */
         #receiptContainer { display: none; }
 
         .receipt-card {
@@ -113,16 +115,12 @@
         .item-description { max-width: 140px; word-wrap: break-word; }
         .item-qty { text-align: right; padding-right: 10px; }
         .item-price { text-align: right; min-width: 60px; }
-        .sub-item-row { display: flex; justify-content: space-between; padding-left: 20px; margin-bottom: 2px; }
 
         .totals-section { margin: 6px 0; }
         .total-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
         .grand-total { font-weight: bold; margin-top: 2px; }
 
-        .payment-section { margin-top: 12px; }
-        .change-row { font-weight: bold; display: flex; justify-content: space-between; margin-top: 4px; }
         .special-note { margin-top: 10px; font-size: 12px; }
-
         .promo-footer { margin-top: 30px; text-align: center; font-weight: bold; font-size: 12px; line-height: 1.4; }
 
         @media print {
@@ -152,65 +150,79 @@
     </div>
     
     <div class="container">
-        <!-- Input Form -->
-        <div class="card">
-            <h2>New Transaction</h2>
-            <form id="cashierForm">
-                <div class="form-group">
-                    <label for="itemName">Item Name</label>
-                    <input type="text" id="itemName" placeholder="e.g. Red Banana" required>
-                </div>
+        <div class="sidebar">
+            <!-- Universal Store Settings Form -->
+            <div class="card">
+                <h2>Universal Store Settings</h2>
+                <form id="storeSettingsForm">
+                    <div class="form-group">
+                        <label for="storeName">Store Name</label>
+                        <input type="text" id="storeName" value="New Store X1" required>
+                    </div>
 
-                <div class="form-group">
-                    <label for="category">Category</label>
-                    <select id="category">
-                        <option value="Groceries">Groceries</option>
-                        <option value="Electronics">Electronics</option>
-                        <option value="Clothing">Clothing</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
+                    <div class="form-group">
+                        <label for="storeAddress">Store Address</label>
+                        <input type="text" id="storeAddress" value="Some address, fd, 23rf" required>
+                    </div>
 
-                <div class="form-row">
                     <div class="form-group">
-                        <label for="quantity">Quantity</label>
-                        <input type="number" id="quantity" step="0.01" min="0.01" value="1" required>
+                        <label for="storePhone">Store Phone Number</label>
+                        <input type="text" id="storePhone" value="+333333333333" required>
                     </div>
-                    <div class="form-group">
-                        <label for="price">Unit Price ($)</label>
-                        <input type="number" id="price" step="0.01" min="0" placeholder="0.00" required>
-                    </div>
-                </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="itemDiscount">Item Discount ($)</label>
-                        <input type="number" id="itemDiscount" step="0.01" min="0" value="0.00">
-                    </div>
-                    <div class="form-group">
-                        <label for="taxPercent">Tax Rate (%)</label>
-                        <input type="number" id="taxPercent" step="0.1" min="0" value="12.0">
-                    </div>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="cashTendered">Cash Tendered ($)</label>
-                        <input type="number" id="cashTendered" step="0.01" min="0" placeholder="Auto / Cash">
-                    </div>
                     <div class="form-group">
                         <label for="salesPerson">Sales Person</label>
-                        <input type="text" id="salesPerson" value="Admin Admin">
+                        <input type="text" id="salesPerson" value="Admin Admin" required>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label for="customerName">Sold To</label>
-                    <input type="text" id="customerName" value="Walk-In">
-                </div>
+                    <button type="submit" class="btn btn-secondary">Save Store Settings</button>
+                </form>
+            </div>
 
-                <button type="submit" class="btn btn-primary">Add Record</button>
-            </form>
+            <!-- Transaction Input Form -->
+            <div class="card">
+                <h2>New Transaction</h2>
+                <form id="cashierForm">
+                    <div class="form-group">
+                        <label for="itemName">Item Name</label>
+                        <input type="text" id="itemName" placeholder="e.g. Red Banana" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category">
+                            <option value="Groceries">Groceries</option>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Clothing">Clothing</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quantity">Quantity</label>
+                            <input type="number" id="quantity" step="0.01" min="0.01" value="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="price">Unit Price ($)</label>
+                            <input type="number" id="price" step="0.01" min="0" placeholder="0.00" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taxPercent">Tax Rate (%)</label>
+                            <input type="number" id="taxPercent" step="0.1" min="0" value="12.0">
+                        </div>
+                        <div class="form-group">
+                            <label for="customerName">Sold To</label>
+                            <input type="text" id="customerName" value="Walk-In">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Add Record</button>
+                </form>
+            </div>
         </div>
 
         <!-- Data Table -->
@@ -248,12 +260,11 @@
     <!-- Thermal Receipt Printable Template -->
     <div id="receiptContainer">
         <div class="receipt-card">
-            <!-- Header -->
+            <!-- Universal Store Header -->
             <div class="store-header">
-                <div class="store-title">New Store X1</div>
-                <div class="store-address">123 Commerce Way, Suite 100</div>
-                <div class="store-address">Main Plaza, NY 10001</div>
-                <div class="store-phone">Phone: +1 800 555 0199</div>
+                <div class="store-title" id="receiptStoreName">New Store X1</div>
+                <div class="store-address" id="receiptStoreAddress">Some address</div>
+                <div class="store-phone" id="receiptStorePhone">Phone: +333333333333</div>
                 <div class="sale-type">SALE</div>
             </div>
 
@@ -274,8 +285,6 @@
                 <div id="receiptTime">1:03:23 PM</div>
                 <div>Sales Person:</div>
                 <div id="receiptSalesPerson">Admin Admin</div>
-                <div>Register:</div>
-                <div>1</div>
                 <div>Order type:</div>
                 <div>Quick Sale</div>
             </div>
@@ -293,10 +302,6 @@
                     <div style="margin-left: auto; margin-right: 25px;">Subtotal</div>
                     <div id="receiptSubtotal">$0.00</div>
                 </div>
-                <div class="total-row" id="receiptDiscountRow">
-                    <div style="margin-left: auto; margin-right: 25px;">Discount</div>
-                    <div id="receiptDiscount">($0.00)</div>
-                </div>
                 <div class="total-row">
                     <div style="margin-left: auto; margin-right: 25px;" id="receiptTaxLabel">12 %</div>
                     <div id="receiptTax">$0.00</div>
@@ -307,18 +312,7 @@
                 </div>
             </div>
 
-            <!-- Payment Info -->
-            <div class="payment-section">
-                <div class="total-row">
-                    <div>Cash Tendered</div>
-                    <div id="receiptCashTendered">$0.00</div>
-                </div>
-                <div class="change-row">
-                    <div style="margin-left: auto; margin-right: 25px;">CHANGE DUE</div>
-                    <div id="receiptChangeDue">$0.00</div>
-                </div>
-                <div class="special-note">Special package</div>
-            </div>
+            <div class="special-note">Special package</div>
 
             <!-- Coupon / Promotion -->
             <div class="promo-footer">
@@ -329,16 +323,44 @@
     </div>
 
     <script>
+        // Load Store Settings & Transactions from LocalStorage
+        let storeSettings = JSON.parse(localStorage.getItem('cashier_store_settings')) || {
+            storeName: "New Store X1",
+            storeAddress: "Some address, fd, 23rf",
+            storePhone: "+333333333333",
+            salesPerson: "Admin Admin"
+        };
+
         let transactions = JSON.parse(localStorage.getItem('cashier_transactions')) || [];
 
+        // Initialize Store Form Fields
+        function loadStoreSettings() {
+            document.getElementById('storeName').value = storeSettings.storeName;
+            document.getElementById('storeAddress').value = storeSettings.storeAddress;
+            document.getElementById('storePhone').value = storeSettings.storePhone;
+            document.getElementById('salesPerson').value = storeSettings.salesPerson;
+        }
+
+        // Save Universal Store Settings
+        document.getElementById('storeSettingsForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            storeSettings = {
+                storeName: document.getElementById('storeName').value,
+                storeAddress: document.getElementById('storeAddress').value,
+                storePhone: document.getElementById('storePhone').value,
+                salesPerson: document.getElementById('salesPerson').value
+            };
+            localStorage.setItem('cashier_store_settings', JSON.stringify(storeSettings));
+            alert("Universal Store Settings saved successfully!");
+        });
+
+        // Add Transaction
         document.getElementById('cashierForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
             const quantity = parseFloat(document.getElementById('quantity').value);
             const price = parseFloat(document.getElementById('price').value);
-            const discount = parseFloat(document.getElementById('itemDiscount').value) || 0;
             const taxPercent = parseFloat(document.getElementById('taxPercent').value) || 0;
-            const cashTendered = parseFloat(document.getElementById('cashTendered').value) || 0;
 
             const record = {
                 id: Date.now(),
@@ -347,12 +369,9 @@
                 category: document.getElementById('category').value,
                 quantity: quantity,
                 price: price,
-                discount: discount,
                 taxPercent: taxPercent,
-                cashTendered: cashTendered,
-                salesPerson: document.getElementById('salesPerson').value || 'Admin Admin',
                 customerName: document.getElementById('customerName').value || 'Walk-In',
-                total: (quantity * price) - discount
+                total: quantity * price
             };
 
             transactions.push(record);
@@ -360,9 +379,7 @@
 
             document.getElementById('cashierForm').reset();
             document.getElementById('quantity').value = "1";
-            document.getElementById('itemDiscount').value = "0.00";
             document.getElementById('taxPercent').value = "12.0";
-            document.getElementById('salesPerson').value = "Admin Admin";
             document.getElementById('customerName').value = "Walk-In";
         });
 
@@ -434,23 +451,28 @@
             const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
 
             const firstItem = itemsToPrint[0];
+
+            // Set Store Header Info from Universal Settings
+            document.getElementById('receiptStoreName').innerText = storeSettings.storeName;
+            document.getElementById('receiptStoreAddress').innerText = storeSettings.storeAddress;
+            document.getElementById('receiptStorePhone').innerText = "Phone: " + storeSettings.storePhone;
+
+            // Set Order Metadata
             document.getElementById('receiptOrderNum').innerText = firstItem.orderNum;
             document.getElementById('receiptSoldTo').innerText = firstItem.customerName;
             document.getElementById('receiptDate').innerText = dateStr;
             document.getElementById('receiptTime').innerText = timeStr;
-            document.getElementById('receiptSalesPerson').innerText = firstItem.salesPerson;
+            document.getElementById('receiptSalesPerson').innerText = storeSettings.salesPerson;
 
             const receiptItemList = document.getElementById('receiptItemList');
             receiptItemList.innerHTML = '';
 
             let subtotal = 0;
-            let totalDiscount = 0;
             let taxPercent = firstItem.taxPercent || 12;
 
             itemsToPrint.forEach(item => {
                 const itemSubtotal = item.quantity * item.price;
                 subtotal += itemSubtotal;
-                totalDiscount += item.discount;
 
                 let itemHtml = `
                     <div class="item-row">
@@ -458,38 +480,18 @@
                         <div class="item-qty">x ${item.quantity}</div>
                         <div class="item-price">$${itemSubtotal.toFixed(2)}</div>
                     </div>
+                    <div style="margin-bottom: 4px;">Sale</div>
                 `;
-
-                if (item.discount > 0) {
-                    itemHtml += `
-                        <div class="sub-item-row">
-                            <div>Discount</div>
-                            <div>($${item.discount.toFixed(2)})</div>
-                        </div>
-                    `;
-                }
-
-                itemHtml += `<div style="margin-bottom: 4px;">Sale</div>`;
                 receiptItemList.innerHTML += itemHtml;
             });
 
-            const netSubtotal = subtotal - totalDiscount;
-            const taxAmount = (netSubtotal * taxPercent) / 100;
-            const grandTotal = netSubtotal + taxAmount;
-
-            let cashTendered = itemsToPrint.reduce((acc, curr) => acc + curr.cashTendered, 0);
-            if (cashTendered < grandTotal) {
-                cashTendered = grandTotal;
-            }
-            const changeDue = cashTendered - grandTotal;
+            const taxAmount = (subtotal * taxPercent) / 100;
+            const grandTotal = subtotal + taxAmount;
 
             document.getElementById('receiptSubtotal').innerText = `$${subtotal.toFixed(2)}`;
-            document.getElementById('receiptDiscount').innerText = `($${totalDiscount.toFixed(2)})`;
             document.getElementById('receiptTaxLabel').innerText = `${taxPercent} %`;
             document.getElementById('receiptTax').innerText = `$${taxAmount.toFixed(2)}`;
             document.getElementById('receiptGrandTotal').innerText = `$${grandTotal.toFixed(2)}`;
-            document.getElementById('receiptCashTendered').innerText = `$${cashTendered.toFixed(2)}`;
-            document.getElementById('receiptChangeDue').innerText = `$${changeDue.toFixed(2)}`;
 
             window.print();
         }
@@ -500,17 +502,16 @@
                 return;
             }
 
-            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price", "Discount", "Total", "Customer", "Sales Person"];
+            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price", "Total", "Customer", "Sales Person"];
             const rows = transactions.map(item => [
                 `"${item.orderNum}"`,
                 `"${item.category}"`,
                 `"${item.item_name.replace(/"/g, '""')}"`,
                 item.quantity,
                 item.price.toFixed(2),
-                item.discount.toFixed(2),
                 item.total.toFixed(2),
                 `"${item.customerName}"`,
-                `"${item.salesPerson}"`
+                `"${storeSettings.salesPerson}"`
             ]);
 
             const csvContent = "data:text/csv;charset=utf-8," 
@@ -525,7 +526,10 @@
             document.body.removeChild(link);
         }
 
-        window.onload = saveAndRender;
+        window.onload = function() {
+            loadStoreSettings();
+            saveAndRender();
+        };
     </script>
 </body>
 </html>
