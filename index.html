@@ -15,8 +15,6 @@
             --text-main: #1e293b;
             --text-muted: #64748b;
             --border: #e2e8f0;
-            --brand-blue: #0f324d;
-            --brand-gold: #e5b932;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -26,7 +24,7 @@
         .header h1 { font-size: 1.875rem; font-weight: 700; color: #0f172a; }
         .header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; }
 
-        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; }
+        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 360px 1fr; gap: 1.5rem; }
         @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
 
         .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
@@ -34,15 +32,15 @@
         .card h2 { font-size: 1.125rem; font-weight: 600; }
         .header-actions { display: flex; gap: 0.5rem; }
 
-        .form-group { margin-bottom: 1rem; }
-        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.375rem; color: #334155; }
-        input[type="text"], input[type="number"], select { width: 100%; padding: 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; background-color: #fff; }
+        .form-group { margin-bottom: 0.85rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.25rem; color: #334155; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 0.5rem 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; background-color: #fff; }
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
         .btn { border: none; border-radius: 6px; padding: 0.625rem 1rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 0.375rem; }
-        .btn-primary { background-color: var(--primary); color: white; width: 100%; }
+        .btn-primary { background-color: var(--primary); color: white; width: 100%; margin-top: 0.5rem; }
         .btn-primary:hover { background-color: var(--primary-hover); }
         .btn-success { background-color: var(--success); color: white; }
         .btn-success:hover { background-color: var(--success-hover); }
@@ -62,158 +60,86 @@
 
         .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem; }
 
-        /* Printable Receipt Styling - Optimized strictly for Single Page */
+        /* Thermal Receipt Template Styles (Exact Match) */
         #receiptContainer { display: none; }
 
+        .receipt-card {
+            width: 320px;
+            background: #ffffff;
+            padding: 20px 18px 30px;
+            color: #000000;
+            font-size: 13px;
+            line-height: 1.3;
+            font-family: 'Courier New', Courier, monospace, Arial, sans-serif;
+            margin: 0 auto;
+        }
+
+        .receipt-card * {
+            font-family: 'Courier New', Courier, monospace, Arial, sans-serif !important;
+        }
+
+        .store-header { text-align: center; margin-bottom: 12px; }
+        .store-title { font-size: 15px; font-weight: bold; margin-bottom: 3px; }
+        .store-address { font-size: 12px; margin-bottom: 2px; }
+        .store-phone { font-size: 12px; margin-bottom: 6px; }
+        .sale-type { font-size: 13px; font-weight: normal; }
+
+        .barcode-container { text-align: center; margin: 12px 0; }
+        .barcode {
+            width: 100%;
+            height: 38px;
+            background: repeating-linear-gradient(
+                90deg,
+                #000 0px, #000 1px,
+                #fff 1px, #fff 2px,
+                #000 2px, #000 5px,
+                #fff 5px, #fff 7px,
+                #000 7px, #000 8px,
+                #fff 8px, #fff 11px,
+                #000 11px, #000 14px,
+                #fff 14px, #fff 15px,
+                #000 15px, #000 17px,
+                #fff 17px, #fff 20px
+            );
+        }
+
+        .details-grid { display: grid; grid-template-columns: 110px 1fr; margin-bottom: 8px; }
+        .details-grid div { padding: 1px 0; }
+
+        .divider { border-bottom: 2px solid #000000; margin: 6px 0; }
+
+        .item-list { margin: 8px 0; }
+        .item-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+        .item-description { max-width: 140px; word-wrap: break-word; }
+        .item-qty { text-align: right; padding-right: 10px; }
+        .item-price { text-align: right; min-width: 60px; }
+        .sub-item-row { display: flex; justify-content: space-between; padding-left: 20px; margin-bottom: 2px; }
+
+        .totals-section { margin: 6px 0; }
+        .total-row { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .grand-total { font-weight: bold; margin-top: 2px; }
+
+        .payment-section { margin-top: 12px; }
+        .change-row { font-weight: bold; display: flex; justify-content: space-between; margin-top: 4px; }
+        .special-note { margin-top: 10px; font-size: 12px; }
+
+        .promo-footer { margin-top: 30px; text-align: center; font-weight: bold; font-size: 12px; line-height: 1.4; }
+
         @media print {
-            @page {
-                size: A4 portrait;
-                margin: 0;
-            }
-            html, body {
-                height: 100%;
-                margin: 0 !important;
-                padding: 0 !important;
-                overflow: hidden;
-            }
+            @page { size: auto; margin: 0; }
             body * { visibility: hidden; }
             #receiptContainer, #receiptContainer * { visibility: visible; }
             #receiptContainer {
-                display: block !important;
+                display: flex !important;
+                justify-content: center;
+                align-items: flex-start;
                 position: absolute;
                 left: 0;
                 top: 0;
                 width: 100vw;
-                height: 100vh;
-                padding: 0;
+                min-height: 100vh;
                 background: white;
-                box-sizing: border-box;
-            }
-
-            .receipt-box {
-                width: 100%;
-                height: 100vh;
-                padding: 40px;
-                position: relative;
-                box-sizing: border-box;
-                display: flex;
-                flex-direction: column;
-                justify-content: space-between;
-            }
-
-            /* Custom Header Graphic Shapes */
-            .receipt-header-graphics {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100px;
-                overflow: hidden;
-                z-index: 1;
-            }
-            .shape-blue {
-                position: absolute;
-                top: -50px;
-                left: -50px;
-                width: 110%;
-                height: 110px;
-                background: var(--brand-blue);
-                transform: rotate(-5deg);
-            }
-            .shape-gold {
-                position: absolute;
-                top: -30px;
-                left: -20px;
-                width: 110%;
-                height: 85px;
-                background: var(--brand-gold);
-                transform: rotate(-3deg);
-            }
-
-            .receipt-title-block {
-                position: relative;
-                z-index: 2;
-                text-align: right;
-                margin-top: 20px;
-                margin-bottom: 20px;
-            }
-            .receipt-title {
-                font-size: 32px;
-                font-weight: 800;
-                letter-spacing: 2px;
-                color: #000;
-                line-height: 1;
-                text-transform: uppercase;
-            }
-            .receipt-date {
-                font-size: 16px;
-                font-weight: 600;
-                margin-top: 15px;
-                color: #000;
-            }
-
-            /* Receipt Table */
-            .receipt-table {
-                width: 100%;
-                border-collapse: collapse;
-                margin-top: 10px;
-                position: relative;
-                z-index: 2;
-            }
-            .receipt-table th, .receipt-table td {
-                border: 1px solid #718096;
-                padding: 8px 10px;
-                font-size: 13px;
-                color: #000;
-            }
-            .receipt-table th {
-                text-transform: uppercase;
-                font-weight: 700;
-                background-color: transparent;
-                text-align: center;
-            }
-            .receipt-table td.qty-col { width: 10%; text-align: center; }
-            .receipt-table td.desc-col { width: 50%; }
-            .receipt-table td.price-col { width: 20%; text-align: right; }
-            .receipt-table td.total-col { width: 20%; text-align: right; }
-
-            .summary-row td { font-weight: 600; }
-            .grand-total-row td { font-weight: 800; text-transform: uppercase; font-size: 14px; }
-
-            /* Footer Graphic Shapes */
-            .receipt-footer-graphics {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 70px;
-                overflow: hidden;
-            }
-            .footer-gold {
-                position: absolute;
-                bottom: 12px;
-                left: -10px;
-                width: 90%;
-                height: 30px;
-                background: var(--brand-gold);
-                transform: rotate(-1deg);
-            }
-            .footer-blue {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                height: 20px;
-                background: var(--brand-blue);
-            }
-            .footer-circle {
-                position: absolute;
-                bottom: 15px;
-                right: 40px;
-                width: 40px;
-                height: 40px;
-                background: var(--brand-gold);
-                border-radius: 50%;
+                padding-top: 20px;
             }
         }
     </style>
@@ -222,7 +148,7 @@
 
     <div class="header">
         <h1>Cashier Data Processing System</h1>
-        <p>Record sales transactions and manage catalog outputs locally</p>
+        <p>Record sales transactions and print POS receipts locally</p>
     </div>
     
     <div class="container">
@@ -232,14 +158,14 @@
             <form id="cashierForm">
                 <div class="form-group">
                     <label for="itemName">Item Name</label>
-                    <input type="text" id="itemName" placeholder="e.g. Wireless Mouse" required>
+                    <input type="text" id="itemName" placeholder="e.g. Red Banana" required>
                 </div>
 
                 <div class="form-group">
                     <label for="category">Category</label>
                     <select id="category">
-                        <option value="Electronics">Electronics</option>
                         <option value="Groceries">Groceries</option>
+                        <option value="Electronics">Electronics</option>
                         <option value="Clothing">Clothing</option>
                         <option value="Other">Other</option>
                     </select>
@@ -248,12 +174,39 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label for="quantity">Quantity</label>
-                        <input type="number" id="quantity" min="1" value="1" required>
+                        <input type="number" id="quantity" step="0.01" min="0.01" value="1" required>
                     </div>
                     <div class="form-group">
                         <label for="price">Unit Price ($)</label>
                         <input type="number" id="price" step="0.01" min="0" placeholder="0.00" required>
                     </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="itemDiscount">Item Discount ($)</label>
+                        <input type="number" id="itemDiscount" step="0.01" min="0" value="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label for="taxPercent">Tax Rate (%)</label>
+                        <input type="number" id="taxPercent" step="0.1" min="0" value="12.0">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="cashTendered">Cash Tendered ($)</label>
+                        <input type="number" id="cashTendered" step="0.01" min="0" placeholder="Auto / Cash">
+                    </div>
+                    <div class="form-group">
+                        <label for="salesPerson">Sales Person</label>
+                        <input type="text" id="salesPerson" value="Admin Admin">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="customerName">Sold To</label>
+                    <input type="text" id="customerName" value="Walk-In">
                 </div>
 
                 <button type="submit" class="btn btn-primary">Add Record</button>
@@ -292,59 +245,85 @@
         </div>
     </div>
 
-    <!-- Printable Receipt Element -->
+    <!-- Thermal Receipt Printable Template -->
     <div id="receiptContainer">
-        <div class="receipt-box">
-            <div>
-                <div class="receipt-header-graphics">
-                    <div class="shape-gold"></div>
-                    <div class="shape-blue"></div>
-                </div>
-
-                <div class="receipt-title-block">
-                    <div class="receipt-title">SALES<br>RECEIPT</div>
-                    <div class="receipt-date">Date: <span id="receiptDate">__/__/____</span></div>
-                </div>
-
-                <table class="receipt-table">
-                    <thead>
-                        <tr>
-                            <th>QTY</th>
-                            <th>DESCRIPTION</th>
-                            <th>PRICE</th>
-                            <th>TOTAL PRICE</th>
-                        </tr>
-                    </thead>
-                    <tbody id="receiptRows"></tbody>
-                    <tfoot>
-                        <tr class="summary-row">
-                            <td colspan="2" style="border: none;"></td>
-                            <td>Subtotal</td>
-                            <td id="receiptSubtotal" style="text-align: right;">$0.00</td>
-                        </tr>
-                        <tr class="summary-row">
-                            <td colspan="2" style="border: none;"></td>
-                            <td>Discounts</td>
-                            <td style="text-align: right;">$0.00</td>
-                        </tr>
-                        <tr class="summary-row">
-                            <td colspan="2" style="border: none;"></td>
-                            <td>Taxes</td>
-                            <td style="text-align: right;">$0.00</td>
-                        </tr>
-                        <tr class="grand-total-row">
-                            <td colspan="2" style="border: none;"></td>
-                            <td>GRAND TOTAL</td>
-                            <td id="receiptGrandTotal" style="text-align: right;">$0.00</td>
-                        </tr>
-                    </tfoot>
-                </table>
+        <div class="receipt-card">
+            <!-- Header -->
+            <div class="store-header">
+                <div class="store-title">New Store X1</div>
+                <div class="store-address">123 Commerce Way, Suite 100</div>
+                <div class="store-address">Main Plaza, NY 10001</div>
+                <div class="store-phone">Phone: +1 800 555 0199</div>
+                <div class="sale-type">SALE</div>
             </div>
 
-            <div class="receipt-footer-graphics">
-                <div class="footer-gold"></div>
-                <div class="footer-blue"></div>
-                <div class="footer-circle"></div>
+            <!-- Barcode -->
+            <div class="barcode-container">
+                <div class="barcode"></div>
+            </div>
+
+            <!-- Meta Data -->
+            <div class="details-grid">
+                <div>Order #:</div>
+                <div id="receiptOrderNum">010900269558</div>
+                <div>Sold To:</div>
+                <div id="receiptSoldTo">Walk-In</div>
+                <div>Order Date:</div>
+                <div id="receiptDate">03/31/17</div>
+                <div>Order Time:</div>
+                <div id="receiptTime">1:03:23 PM</div>
+                <div>Sales Person:</div>
+                <div id="receiptSalesPerson">Admin Admin</div>
+                <div>Register:</div>
+                <div>1</div>
+                <div>Order type:</div>
+                <div>Quick Sale</div>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Items Purchased -->
+            <div class="item-list" id="receiptItemList"></div>
+
+            <div class="divider"></div>
+
+            <!-- Summary & Totals -->
+            <div class="totals-section">
+                <div class="total-row">
+                    <div style="margin-left: auto; margin-right: 25px;">Subtotal</div>
+                    <div id="receiptSubtotal">$0.00</div>
+                </div>
+                <div class="total-row" id="receiptDiscountRow">
+                    <div style="margin-left: auto; margin-right: 25px;">Discount</div>
+                    <div id="receiptDiscount">($0.00)</div>
+                </div>
+                <div class="total-row">
+                    <div style="margin-left: auto; margin-right: 25px;" id="receiptTaxLabel">12 %</div>
+                    <div id="receiptTax">$0.00</div>
+                </div>
+                <div class="total-row grand-total">
+                    <div style="margin-left: auto; margin-right: 25px;">Total</div>
+                    <div id="receiptGrandTotal">$0.00</div>
+                </div>
+            </div>
+
+            <!-- Payment Info -->
+            <div class="payment-section">
+                <div class="total-row">
+                    <div>Cash Tendered</div>
+                    <div id="receiptCashTendered">$0.00</div>
+                </div>
+                <div class="change-row">
+                    <div style="margin-left: auto; margin-right: 25px;">CHANGE DUE</div>
+                    <div id="receiptChangeDue">$0.00</div>
+                </div>
+                <div class="special-note">Special package</div>
+            </div>
+
+            <!-- Coupon / Promotion -->
+            <div class="promo-footer">
+                30% off your next order –<br>
+                if you order through us with code LOCAL!
             </div>
         </div>
     </div>
@@ -355,13 +334,25 @@
         document.getElementById('cashierForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
+            const quantity = parseFloat(document.getElementById('quantity').value);
+            const price = parseFloat(document.getElementById('price').value);
+            const discount = parseFloat(document.getElementById('itemDiscount').value) || 0;
+            const taxPercent = parseFloat(document.getElementById('taxPercent').value) || 0;
+            const cashTendered = parseFloat(document.getElementById('cashTendered').value) || 0;
+
             const record = {
                 id: Date.now(),
+                orderNum: String(Math.floor(100000000000 + Math.random() * 900000000000)),
                 item_name: document.getElementById('itemName').value,
                 category: document.getElementById('category').value,
-                quantity: parseInt(document.getElementById('quantity').value, 10),
-                price: parseFloat(document.getElementById('price').value),
-                total: parseInt(document.getElementById('quantity').value, 10) * parseFloat(document.getElementById('price').value)
+                quantity: quantity,
+                price: price,
+                discount: discount,
+                taxPercent: taxPercent,
+                cashTendered: cashTendered,
+                salesPerson: document.getElementById('salesPerson').value || 'Admin Admin',
+                customerName: document.getElementById('customerName').value || 'Walk-In',
+                total: (quantity * price) - discount
             };
 
             transactions.push(record);
@@ -369,6 +360,10 @@
 
             document.getElementById('cashierForm').reset();
             document.getElementById('quantity').value = "1";
+            document.getElementById('itemDiscount').value = "0.00";
+            document.getElementById('taxPercent').value = "12.0";
+            document.getElementById('salesPerson').value = "Admin Admin";
+            document.getElementById('customerName').value = "Walk-In";
         });
 
         function saveAndRender() {
@@ -398,7 +393,7 @@
                     </td>
                     <td>${item.category}</td>
                     <td>${item.item_name}</td>
-                    <td>${item.quantity}</td>
+                    <td>x ${item.quantity}</td>
                     <td>$${item.price.toFixed(2)}</td>
                     <td><strong>$${item.total.toFixed(2)}</strong></td>
                     <td style="text-align: center;">
@@ -434,46 +429,68 @@
                 return;
             }
 
-            // Fill receipt date
-            const today = new Date().toLocaleDateString('en-US');
-            document.getElementById('receiptDate').innerText = today;
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: '2-digit' });
+            const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
 
-            // Render table rows
-            const receiptRows = document.getElementById('receiptRows');
-            receiptRows.innerHTML = '';
+            const firstItem = itemsToPrint[0];
+            document.getElementById('receiptOrderNum').innerText = firstItem.orderNum;
+            document.getElementById('receiptSoldTo').innerText = firstItem.customerName;
+            document.getElementById('receiptDate').innerText = dateStr;
+            document.getElementById('receiptTime').innerText = timeStr;
+            document.getElementById('receiptSalesPerson').innerText = firstItem.salesPerson;
 
-            let grandTotal = 0;
-            const targetRowCount = 6; // Compact row count ensuring single-page print fit
+            const receiptItemList = document.getElementById('receiptItemList');
+            receiptItemList.innerHTML = '';
+
+            let subtotal = 0;
+            let totalDiscount = 0;
+            let taxPercent = firstItem.taxPercent || 12;
 
             itemsToPrint.forEach(item => {
-                grandTotal += item.total;
-                receiptRows.innerHTML += `
-                    <tr>
-                        <td class="qty-col">${item.quantity}</td>
-                        <td class="desc-col">${item.item_name} (${item.category})</td>
-                        <td class="price-col">$${item.price.toFixed(2)}</td>
-                        <td class="total-col">$${item.total.toFixed(2)}</td>
-                    </tr>
+                const itemSubtotal = item.quantity * item.price;
+                subtotal += itemSubtotal;
+                totalDiscount += item.discount;
+
+                let itemHtml = `
+                    <div class="item-row">
+                        <div class="item-description">${item.item_name}</div>
+                        <div class="item-qty">x ${item.quantity}</div>
+                        <div class="item-price">$${itemSubtotal.toFixed(2)}</div>
+                    </div>
                 `;
+
+                if (item.discount > 0) {
+                    itemHtml += `
+                        <div class="sub-item-row">
+                            <div>Discount</div>
+                            <div>($${item.discount.toFixed(2)})</div>
+                        </div>
+                    `;
+                }
+
+                itemHtml += `<div style="margin-bottom: 4px;">Sale</div>`;
+                receiptItemList.innerHTML += itemHtml;
             });
 
-            // Fill empty rows for structural spacing
-            const emptyRowsNeeded = targetRowCount - itemsToPrint.length;
-            for (let i = 0; i < emptyRowsNeeded; i++) {
-                receiptRows.innerHTML += `
-                    <tr>
-                        <td class="qty-col">&nbsp;</td>
-                        <td class="desc-col"></td>
-                        <td class="price-col"></td>
-                        <td class="total-col"></td>
-                    </tr>
-                `;
+            const netSubtotal = subtotal - totalDiscount;
+            const taxAmount = (netSubtotal * taxPercent) / 100;
+            const grandTotal = netSubtotal + taxAmount;
+
+            let cashTendered = itemsToPrint.reduce((acc, curr) => acc + curr.cashTendered, 0);
+            if (cashTendered < grandTotal) {
+                cashTendered = grandTotal;
             }
+            const changeDue = cashTendered - grandTotal;
 
-            document.getElementById('receiptSubtotal').innerText = `$${grandTotal.toFixed(2)}`;
+            document.getElementById('receiptSubtotal').innerText = `$${subtotal.toFixed(2)}`;
+            document.getElementById('receiptDiscount').innerText = `($${totalDiscount.toFixed(2)})`;
+            document.getElementById('receiptTaxLabel').innerText = `${taxPercent} %`;
+            document.getElementById('receiptTax').innerText = `$${taxAmount.toFixed(2)}`;
             document.getElementById('receiptGrandTotal').innerText = `$${grandTotal.toFixed(2)}`;
+            document.getElementById('receiptCashTendered').innerText = `$${cashTendered.toFixed(2)}`;
+            document.getElementById('receiptChangeDue').innerText = `$${changeDue.toFixed(2)}`;
 
-            // Trigger window print dialog
             window.print();
         }
 
@@ -483,13 +500,17 @@
                 return;
             }
 
-            const headers = ["Category", "Item Name", "Quantity", "Price", "Total"];
+            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price", "Discount", "Total", "Customer", "Sales Person"];
             const rows = transactions.map(item => [
+                `"${item.orderNum}"`,
                 `"${item.category}"`,
                 `"${item.item_name.replace(/"/g, '""')}"`,
                 item.quantity,
                 item.price.toFixed(2),
-                item.total.toFixed(2)
+                item.discount.toFixed(2),
+                item.total.toFixed(2),
+                `"${item.customerName}"`,
+                `"${item.salesPerson}"`
             ]);
 
             const csvContent = "data:text/csv;charset=utf-8," 
