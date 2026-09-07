@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cashier Data Processing System</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #16a34a;
+            --success-hover: #15803d;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 2rem 1rem; line-height: 1.5; }
+        
+        .header { text-align: center; margin-bottom: 2rem; }
+        .header h1 { font-size: 1.875rem; font-weight: 700; color: #0f172a; }
+        .header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; }
+
+        .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 350px 1fr; gap: 1.5rem; }
+        @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+        .card h2 { font-size: 1.125rem; font-weight: 600; }
+
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.375rem; color: #334155; }
+        input, select { width: 100%; padding: 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; background-color: #fff; transition: border-color 0.2s; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+        .btn { border: none; border-radius: 6px; padding: 0.625rem 1rem; font-size: 0.875rem; font-weight: 500; cursor: pointer; transition: background-color 0.2s; width: 100%; }
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-hover); }
+        .btn-success { background-color: var(--success); color: white; width: auto; }
+        .btn-success:hover { background-color: var(--success-hover); }
+
+        .table-container { overflow-x: auto; margin-top: 1rem; border: 1px solid var(--border); border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; text-align: left; }
+        th { background-color: #f1f5f9; padding: 0.75rem 1rem; font-weight: 600; color: #475569; border-bottom: 1px solid var(--border); }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background-color: #f8fafc; }
+
+        .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>Cashier Data Processing System</h1>
+        <p>Record sales transactions and manage catalog outputs locally</p>
+    </div>
+    
+    <div class="container">
+        <!-- Input Form -->
+        <div class="card">
+            <h2>New Transaction</h2>
+            <form id="cashierForm">
+                <div class="form-group">
+                    <label for="itemName">Item Name</label>
+                    <input type="text" id="itemName" placeholder="e.g. Wireless Mouse" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">Category</label>
+                    <select id="category">
+                        <option value="Electronics">Electronics</option>
+                        <option value="Groceries">Groceries</option>
+                        <option value="Clothing">Clothing</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="quantity">Quantity</label>
+                        <input type="number" id="quantity" min="1" value="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="price">Unit Price ($)</label>
+                        <input type="number" id="price" step="0.01" min="0" placeholder="0.00" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Add Record</button>
+            </form>
+        </div>
+
+        <!-- Data Table -->
+        <div class="card">
+            <div class="card-header">
+                <h2>Processed Records</h2>
+                <button type="button" class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+            </div>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Item Name</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dataTableBody"></tbody>
+                </table>
+                <div id="emptyState" class="empty-state">No transactions recorded yet.</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load data from browser LocalStorage so entries persist across refreshes
+        let transactions = JSON.parse(localStorage.getItem('cashier_transactions')) || [];
+
+        document.getElementById('cashierForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const record = {
+                item_name: document.getElementById('itemName').value,
+                category: document.getElementById('category').value,
+                quantity: parseInt(document.getElementById('quantity').value, 10),
+                price: parseFloat(document.getElementById('price').value),
+                total: parseInt(document.getElementById('quantity').value, 10) * parseFloat(document.getElementById('price').value)
+            };
+
+            transactions.push(record);
+            saveAndRender();
+
+            document.getElementById('cashierForm').reset();
+            document.getElementById('quantity').value = "1";
+        });
+
+        function saveAndRender() {
+            // Store locally in browser memory
+            localStorage.setItem('cashier_transactions', JSON.stringify(transactions));
+
+            // Sort data by Category, then Item Name (matching backend logic)
+            const sortedData = [...transactions].sort((a, b) => {
+                if (a.category === b.category) {
+                    return a.item_name.localeCompare(b.item_name);
+                }
+                return a.category.localeCompare(b.category);
+            });
+
+            const tbody = document.getElementById('dataTableBody');
+            const emptyState = document.getElementById('emptyState');
+            tbody.innerHTML = '';
+
+            if (sortedData.length === 0) {
+                emptyState.style.display = 'block';
+                return;
+            }
+            
+            emptyState.style.display = 'none';
+            sortedData.forEach(item => {
+                const row = `<tr>
+                    <td>${item.category}</td>
+                    <td>${item.item_name}</td>
+                    <td>${item.quantity}</td>
+                    <td>$${item.price.toFixed(2)}</td>
+                    <td><strong>$${item.total.toFixed(2)}</strong></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        function exportToCSV() {
+            if (transactions.length === 0) {
+                alert("No data available to export.");
+                return;
+            }
+
+            const headers = ["Category", "Item Name", "Quantity", "Price", "Total"];
+            const rows = transactions.map(item => [
+                `"${item.category}"`,
+                `"${item.item_name.replace(/"/g, '""')}"`,
+                item.quantity,
+                item.price.toFixed(2),
+                item.total.toFixed(2)
+            ]);
+
+            const csvContent = "data:text/csv;charset=utf-8," 
+                + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `cashier_data_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Initialize display on load
+        window.onload = saveAndRender;
+    </script>
+</body>
+</html>
