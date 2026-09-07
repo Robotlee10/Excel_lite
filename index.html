@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cashier Data Processing System</title>
+    <title>Cashier POS Browser Interface</title>
     <style>
         :root {
             --bg-color: #f8fafc;
@@ -15,14 +15,28 @@
             --text-main: #1e293b;
             --text-muted: #64748b;
             --border: #e2e8f0;
+            --warning: #eab308;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-main); padding: 2rem 1rem; line-height: 1.5; }
         
-        .header { text-align: center; margin-bottom: 2rem; }
+        .header { text-align: center; margin-bottom: 2rem; position: relative; }
         .header h1 { font-size: 1.875rem; font-weight: 700; color: #0f172a; }
         .header p { color: var(--text-muted); font-size: 0.95rem; margin-top: 0.25rem; }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-top: 0.5rem;
+        }
+        .status-online { background-color: #dcfce7; color: #166534; }
+        .status-offline { background-color: #fef9c3; color: #854d0e; }
 
         .container { max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 380px 1fr; gap: 1.5rem; }
         @media (max-width: 850px) { .container { grid-template-columns: 1fr; } }
@@ -67,7 +81,11 @@
 
         .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem; }
 
-        /* Collapsible Utility */
+        /* Sync Status Column Indicator */
+        .sync-badge { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+        .synced-true { background-color: var(--success); }
+        .synced-false { background-color: var(--warning); }
+
         .hidden-form { display: none; }
 
         /* Thermal Receipt Template Styles */
@@ -155,11 +173,12 @@
     <div class="header">
         <h1>Cashier Data Processing System</h1>
         <p>Record sales transactions and print POS receipts locally</p>
+        <span id="networkStatus" class="status-badge status-online">● System Online</span>
     </div>
     
     <div class="container">
         <div class="sidebar">
-            <!-- Hidable Universal Store Settings Form -->
+            <!-- Store Settings Form -->
             <div class="card">
                 <div class="card-header" style="margin-bottom: 0;">
                     <h2>Store Settings</h2>
@@ -236,7 +255,7 @@
                 </div>
             </div>
 
-            <!-- Optional Customer Name Section for Receipt Generation -->
+            <!-- Customer Input Section -->
             <div style="background-color: #f1f5f9; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem;">
                 <label class="checkbox-label">
                     <input type="checkbox" id="includeCustomerName" onchange="toggleCustomerInput()">
@@ -254,6 +273,7 @@
                             <th style="width: 40px; text-align: center;">
                                 <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
                             </th>
+                            <th style="width: 20px;"></th>
                             <th>Category</th>
                             <th>Item Name</th>
                             <th>Qty</th>
@@ -272,7 +292,6 @@
     <!-- Thermal Receipt Printable Template -->
     <div id="receiptContainer">
         <div class="receipt-card">
-            <!-- Universal Store Header -->
             <div class="store-header">
                 <div class="store-title" id="receiptStoreName">New Store X1</div>
                 <div class="store-address" id="receiptStoreAddress">Some address</div>
@@ -280,22 +299,19 @@
                 <div class="sale-type">SALE</div>
             </div>
 
-            <!-- Barcode -->
             <div class="barcode-container">
                 <div class="barcode"></div>
             </div>
 
-            <!-- Meta Data -->
             <div class="details-grid">
                 <div>Order #:</div>
                 <div id="receiptOrderNum">010900269558</div>
                 
-                <!-- Dynamic Sold To Field -->
                 <div id="receiptSoldToLabel" class="hidden-form">Sold To:</div>
                 <div id="receiptSoldToValue" class="hidden-form">Walk-In</div>
 
                 <div>Order Date:</div>
-                <div id="receiptDate">03/31/17</div>
+                <div id="receiptDate">03/31/26</div>
                 <div>Order Time:</div>
                 <div id="receiptTime">1:03:23 PM</div>
                 <div>Sales Person:</div>
@@ -305,13 +321,9 @@
             </div>
 
             <div class="divider"></div>
-
-            <!-- Items Purchased -->
             <div class="item-list" id="receiptItemList"></div>
-
             <div class="divider"></div>
 
-            <!-- Summary & Totals -->
             <div class="totals-section">
                 <div class="total-row grand-total">
                     <div style="margin-left: auto; margin-right: 25px;">Total</div>
@@ -320,8 +332,6 @@
             </div>
 
             <div class="special-note">Special package</div>
-
-            <!-- Coupon / Promotion -->
             <div class="promo-footer">
                 30% off your next order –<br>
                 if you order through us with code LOCAL!
@@ -330,7 +340,23 @@
     </div>
 
     <script>
-        // Load Store Settings & Transactions from LocalStorage
+        // --- IndexedDB & Offline Storage Setup ---
+        function openIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open("POSLocalDB", 1);
+                request.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains("orders")) {
+                        const store = db.createObjectStore("orders", { keyPath: "client_uuid" });
+                        store.createIndex("synced", "synced", { unique: false });
+                    }
+                };
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+            });
+        }
+
+        // --- Store Settings Engine ---
         let storeSettings = JSON.parse(localStorage.getItem('cashier_store_settings')) || {
             storeName: "New Store X1",
             storeAddress: "Some address, fd, 23rf",
@@ -338,13 +364,9 @@
             salesPerson: "Admin Admin"
         };
 
-        let transactions = JSON.parse(localStorage.getItem('cashier_transactions')) || [];
-
-        // Toggle Settings Visibility
         function toggleStoreSettings() {
             const form = document.getElementById('storeSettingsForm');
             const btn = document.getElementById('toggleSettingsBtn');
-            
             if (form.classList.contains('hidden-form')) {
                 form.classList.remove('hidden-form');
                 btn.innerText = 'Hide';
@@ -354,19 +376,12 @@
             }
         }
 
-        // Toggle Optional Customer Input Field
         function toggleCustomerInput() {
             const checkbox = document.getElementById('includeCustomerName');
             const group = document.getElementById('customerInputGroup');
-            
-            if (checkbox.checked) {
-                group.classList.remove('hidden-form');
-            } else {
-                group.classList.add('hidden-form');
-            }
+            group.classList.toggle('hidden-form', !checkbox.checked);
         }
 
-        // Initialize Store Form Fields
         function loadStoreSettings() {
             document.getElementById('storeName').value = storeSettings.storeName;
             document.getElementById('storeAddress').value = storeSettings.storeAddress;
@@ -374,7 +389,6 @@
             document.getElementById('salesPerson').value = storeSettings.salesPerson;
         }
 
-        // Save Universal Store Settings
         document.getElementById('storeSettingsForm').addEventListener('submit', function(e) {
             e.preventDefault();
             storeSettings = {
@@ -387,62 +401,88 @@
             alert("Store settings saved successfully!");
         });
 
-        // Add Transaction
-        document.getElementById('cashierForm').addEventListener('submit', function(e) {
-            e.preventDefault();
+        // --- Transaction & Sync Handling ---
+        async function addTransaction(event) {
+            event.preventDefault();
 
             const quantity = parseFloat(document.getElementById('quantity').value);
             const price = parseFloat(document.getElementById('price').value);
+            const total = quantity * price;
 
             const record = {
-                id: Date.now(),
-                orderNum: String(Math.floor(100000000000 + Math.random() * 900000000000)),
+                client_uuid: crypto.randomUUID(),
+                receipt_number: "POS-" + String(Math.floor(100000000000 + Math.random() * 900000000000)),
+                cashier_id: 1,
                 item_name: document.getElementById('itemName').value,
                 category: document.getElementById('category').value,
                 quantity: quantity,
                 price: price,
-                total: quantity * price
+                subtotal: total,
+                tax_amount: 0.00,
+                discount_amount: 0.00,
+                grand_total: total,
+                payment_method: "cash",
+                amount_paid: total,
+                change_given: 0.00,
+                created_at: new Date().toISOString(),
+                synced: false,
+                items: [{
+                    product_id: 1,
+                    quantity: quantity,
+                    unit_price: price,
+                    subtotal: total
+                }]
             };
 
-            transactions.push(record);
-            saveAndRender();
+            const db = await openIndexedDB();
+            const tx = db.transaction("orders", "readwrite");
+            await tx.objectStore("orders").add(record);
 
             document.getElementById('cashierForm').reset();
             document.getElementById('quantity').value = "1";
-        });
 
-        function saveAndRender() {
-            localStorage.setItem('cashier_transactions', JSON.stringify(transactions));
+            renderTable();
+            syncOfflineOrders();
+        }
 
-            const sortedData = [...transactions].sort((a, b) => {
-                if (a.category === b.category) {
-                    return a.item_name.localeCompare(b.item_name);
-                }
-                return a.category.localeCompare(b.category);
+        document.getElementById('cashierForm').addEventListener('submit', addTransaction);
+
+        async function getLocalOrders() {
+            const db = await openIndexedDB();
+            return new Promise((resolve) => {
+                const tx = db.transaction("orders", "readonly");
+                const req = tx.objectStore("orders").getAll();
+                req.onsuccess = () => resolve(req.result || []);
             });
+        }
 
+        async function renderTable() {
+            const transactions = await getLocalOrders();
             const tbody = document.getElementById('dataTableBody');
             const emptyState = document.getElementById('emptyState');
             tbody.innerHTML = '';
 
-            if (sortedData.length === 0) {
+            if (transactions.length === 0) {
                 emptyState.style.display = 'block';
                 return;
             }
-            
+
             emptyState.style.display = 'none';
-            sortedData.forEach(item => {
+            transactions.forEach(item => {
                 const row = `<tr>
                     <td style="text-align: center;">
-                        <input type="checkbox" class="item-checkbox" value="${item.id}">
+                        <input type="checkbox" class="item-checkbox" value="${item.client_uuid}">
+                    </td>
+                    <td style="text-align: center;">
+                        <span class="sync-badge ${item.synced ? 'synced-true' : 'synced-false'}" title="${item.synced ? 'Synced to PostgreSQL' : 'Stored Locally (Pending Sync)'}"></span>
                     </td>
                     <td>${item.category}</td>
                     <td>${item.item_name}</td>
                     <td>x ${item.quantity}</td>
                     <td>₦${item.price.toFixed(2)}</td>
-                    <td><strong>₦${item.total.toFixed(2)}</strong></td>
+                    <td><strong>₦${item.grand_total.toFixed(2)}</strong></td>
                     <td style="text-align: center;">
-                        <button class="action-btn" title="Download Receipt" onclick="printReceipt('${item.id}')">
+                        <button class="action-btn" title="Download Receipt" onclick="printReceipt('${item.client_uuid}')">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                               <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
                             </svg>
@@ -453,20 +493,81 @@
             });
         }
 
+        async function syncOfflineOrders() {
+            if (!navigator.onLine) {
+                updateNetworkBadge(false);
+                return;
+            }
+
+            updateNetworkBadge(true);
+            const db = await openIndexedDB();
+            const tx = db.transaction("orders", "readonly");
+            const index = tx.objectStore("orders").index("synced");
+
+            const unsyncedOrders = await new Promise((resolve) => {
+                const req = index.getAll(false);
+                req.onsuccess = () => resolve(req.result);
+            });
+
+            if (unsyncedOrders.length === 0) return;
+
+            try {
+                const response = await fetch("/api/v1/sync/orders", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(unsyncedOrders),
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.synced_uuids) {
+                    const writeTx = db.transaction("orders", "readwrite");
+                    const store = writeTx.objectStore("orders");
+
+                    for (const uuid of result.synced_uuids) {
+                        const item = await new Promise((res) => {
+                            const req = store.get(uuid);
+                            req.onsuccess = () => res(req.result);
+                        });
+
+                        if (item) {
+                            item.synced = true;
+                            store.put(item);
+                        }
+                    }
+                    renderTable();
+                }
+            } catch (error) {
+                console.log("Backend offline or unreachable, retaining local buffer.");
+            }
+        }
+
+        function updateNetworkBadge(isOnline) {
+            const badge = document.getElementById('networkStatus');
+            if (isOnline) {
+                badge.className = 'status-badge status-online';
+                badge.innerText = '● System Online';
+            } else {
+                badge.className = 'status-badge status-offline';
+                badge.innerText = '● Offline Mode (Saving Locally)';
+            }
+        }
+
         function toggleSelectAll(masterCheckbox) {
             const checkboxes = document.querySelectorAll('.item-checkbox');
             checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
         }
 
-        function printReceipt(targetMode) {
+        async function printReceipt(targetMode) {
+            const transactions = await getLocalOrders();
             let itemsToPrint = [];
 
             if (targetMode === 'selected') {
                 const selectedBoxes = document.querySelectorAll('.item-checkbox:checked');
-                const selectedIds = Array.from(selectedBoxes).map(cb => parseInt(cb.value, 10));
-                itemsToPrint = transactions.filter(item => selectedIds.includes(item.id));
+                const selectedUuids = Array.from(selectedBoxes).map(cb => cb.value);
+                itemsToPrint = transactions.filter(item => selectedUuids.includes(item.client_uuid));
             } else {
-                itemsToPrint = transactions.filter(item => item.id == targetMode);
+                itemsToPrint = transactions.filter(item => item.client_uuid === targetMode);
             }
 
             if (itemsToPrint.length === 0) {
@@ -480,21 +581,17 @@
 
             const firstItem = itemsToPrint[0];
 
-            // Set Store Header Info from Universal Settings
             document.getElementById('receiptStoreName').innerText = storeSettings.storeName;
             document.getElementById('receiptStoreAddress').innerText = storeSettings.storeAddress;
             document.getElementById('receiptStorePhone').innerText = "Phone: " + storeSettings.storePhone;
 
-            // Set Order Metadata
-            document.getElementById('receiptOrderNum').innerText = firstItem.orderNum;
+            document.getElementById('receiptOrderNum').innerText = firstItem.receipt_number;
             document.getElementById('receiptDate').innerText = dateStr;
             document.getElementById('receiptTime').innerText = timeStr;
             document.getElementById('receiptSalesPerson').innerText = storeSettings.salesPerson;
 
-            // Check if Customer Name should be printed
             const includeCustomer = document.getElementById('includeCustomerName').checked;
             const customerNameInput = document.getElementById('receiptCustomerName').value.trim();
-            
             const labelEl = document.getElementById('receiptSoldToLabel');
             const valEl = document.getElementById('receiptSoldToValue');
 
@@ -513,14 +610,12 @@
             let grandTotal = 0;
 
             itemsToPrint.forEach(item => {
-                const itemTotal = item.quantity * item.price;
-                grandTotal += itemTotal;
-
+                grandTotal += item.grand_total;
                 let itemHtml = `
                     <div class="item-row">
                         <div class="item-description">${item.item_name}</div>
                         <div class="item-qty">x ${item.quantity}</div>
-                        <div class="item-price">₦${itemTotal.toFixed(2)}</div>
+                        <div class="item-price">₦${item.grand_total.toFixed(2)}</div>
                     </div>
                     <div style="margin-bottom: 4px;">Sale</div>
                 `;
@@ -528,25 +623,26 @@
             });
 
             document.getElementById('receiptGrandTotal').innerText = `₦${grandTotal.toFixed(2)}`;
-
             window.print();
         }
 
-        function exportToCSV() {
+        async function exportToCSV() {
+            const transactions = await getLocalOrders();
             if (transactions.length === 0) {
                 alert("No data available to export.");
                 return;
             }
 
-            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price (NGN)", "Total (NGN)", "Sales Person"];
+            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price (NGN)", "Total (NGN)", "Sales Person", "Synced Status"];
             const rows = transactions.map(item => [
-                `"${item.orderNum}"`,
+                `"${item.receipt_number}"`,
                 `"${item.category}"`,
                 `"${item.item_name.replace(/"/g, '""')}"`,
                 item.quantity,
                 item.price.toFixed(2),
-                item.total.toFixed(2),
-                `"${storeSettings.salesPerson}"`
+                item.grand_total.toFixed(2),
+                `"${storeSettings.salesPerson}"`,
+                item.synced ? "Synced" : "Pending"
             ]);
 
             const csvContent = "data:text/csv;charset=utf-8," 
@@ -561,9 +657,14 @@
             document.body.removeChild(link);
         }
 
+        window.addEventListener("online", syncOfflineOrders);
+        window.addEventListener("offline", () => updateNetworkBadge(false));
+
         window.onload = function() {
             loadStoreSettings();
-            saveAndRender();
+            renderTable();
+            syncOfflineOrders();
+            setInterval(syncOfflineOrders, 30000);
         };
     </script>
 </body>
