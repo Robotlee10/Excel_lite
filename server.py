@@ -1,18 +1,27 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import os
 import psycopg2
-from fastapi.middleware.cors import CORSMiddleware
 
+app = FastAPI(title="POS Sync Backend")
+
+# --- CORS MIDDLEWARE CONFIGURATION ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Or specify your Vercel domain
+    allow_origins=[
+        "https://excel.robotlee.xyz",
+        "http://excel.robotlee.xyz",
+        "http://localhost:3000",
+        "http://127.0.0.1:5500",
+        "*"  # Allows all origins for unrestricted cross-origin syncing
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows GET, POST, OPTIONS, PUT, DELETE
+    allow_headers=["*"],  # Allows all headers (Content-Type, Authorization, etc.)
 )
-app = FastAPI(title="POS Sync Backend")
+# -------------------------------------
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_NAME = os.getenv("DB_NAME", "pos_db")
@@ -47,6 +56,10 @@ class SyncOrderSchema(BaseModel):
     change_given: float = 0.0
     created_at: str
     items: List[OrderItemSchema]
+
+@app.get("/")
+def read_root():
+    return {"status": "online", "message": "POS Sync Backend Engine Active"}
 
 @app.post("/api/v1/sync/orders")
 def sync_orders(orders: List[SyncOrderSchema], db_conn=Depends(get_db)):
