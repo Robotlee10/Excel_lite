@@ -34,6 +34,8 @@
         .card h2 { font-size: 1.125rem; font-weight: 600; }
         .header-actions { display: flex; gap: 0.5rem; }
 
+        .toggle-btn { background: none; border: none; font-size: 0.85rem; color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline; }
+
         .form-group { margin-bottom: 0.85rem; }
         label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.25rem; color: #334155; }
         input[type="text"], input[type="number"], select { width: 100%; padding: 0.5rem 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; background-color: #fff; }
@@ -46,7 +48,7 @@
         .btn-primary:hover { background-color: var(--primary-hover); }
         .btn-success { background-color: var(--success); color: white; }
         .btn-success:hover { background-color: var(--success-hover); }
-        .btn-secondary { background-color: #475569; color: white; }
+        .btn-secondary { background-color: #475569; color: white; width: 100%; }
         .btn-secondary:hover { background-color: #334155; }
         
         .action-btn { background: none; border: none; cursor: pointer; padding: 0.375rem; border-radius: 4px; color: var(--primary); transition: background-color 0.2s; }
@@ -61,6 +63,9 @@
         tr:hover { background-color: #f8fafc; }
 
         .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem; }
+
+        /* Collapsible Utility */
+        .hidden-form { display: none; }
 
         /* Thermal Receipt Template Styles */
         #receiptContainer { display: none; }
@@ -151,10 +156,14 @@
     
     <div class="container">
         <div class="sidebar">
-            <!-- Universal Store Settings Form -->
+            <!-- Hidable Universal Store Settings Form -->
             <div class="card">
-                <h2>Universal Store Settings</h2>
-                <form id="storeSettingsForm">
+                <div class="card-header" style="margin-bottom: 0;">
+                    <h2>Store Settings</h2>
+                    <button type="button" class="toggle-btn" id="toggleSettingsBtn" onclick="toggleStoreSettings()">Hide</button>
+                </div>
+                
+                <form id="storeSettingsForm" style="margin-top: 1.25rem;">
                     <div class="form-group">
                         <label for="storeName">Store Name</label>
                         <input type="text" id="storeName" value="New Store X1" required>
@@ -167,7 +176,7 @@
 
                     <div class="form-group">
                         <label for="storePhone">Store Phone Number</label>
-                        <input type="text" id="storePhone" value="+333333333333" required>
+                        <input type="text" id="storePhone" value="+2348000000000" required>
                     </div>
 
                     <div class="form-group">
@@ -204,20 +213,14 @@
                             <input type="number" id="quantity" step="0.01" min="0.01" value="1" required>
                         </div>
                         <div class="form-group">
-                            <label for="price">Unit Price ($)</label>
+                            <label for="price">Unit Price (₦)</label>
                             <input type="number" id="price" step="0.01" min="0" placeholder="0.00" required>
                         </div>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="taxPercent">Tax Rate (%)</label>
-                            <input type="number" id="taxPercent" step="0.1" min="0" value="12.0">
-                        </div>
-                        <div class="form-group">
-                            <label for="customerName">Sold To</label>
-                            <input type="text" id="customerName" value="Walk-In">
-                        </div>
+                    <div class="form-group">
+                        <label for="customerName">Sold To</label>
+                        <input type="text" id="customerName" value="Walk-In">
                     </div>
 
                     <button type="submit" class="btn btn-primary">Add Record</button>
@@ -264,7 +267,7 @@
             <div class="store-header">
                 <div class="store-title" id="receiptStoreName">New Store X1</div>
                 <div class="store-address" id="receiptStoreAddress">Some address</div>
-                <div class="store-phone" id="receiptStorePhone">Phone: +333333333333</div>
+                <div class="store-phone" id="receiptStorePhone">Phone: +2348000000000</div>
                 <div class="sale-type">SALE</div>
             </div>
 
@@ -298,17 +301,9 @@
 
             <!-- Summary & Totals -->
             <div class="totals-section">
-                <div class="total-row">
-                    <div style="margin-left: auto; margin-right: 25px;">Subtotal</div>
-                    <div id="receiptSubtotal">$0.00</div>
-                </div>
-                <div class="total-row">
-                    <div style="margin-left: auto; margin-right: 25px;" id="receiptTaxLabel">12 %</div>
-                    <div id="receiptTax">$0.00</div>
-                </div>
                 <div class="total-row grand-total">
                     <div style="margin-left: auto; margin-right: 25px;">Total</div>
-                    <div id="receiptGrandTotal">$0.00</div>
+                    <div id="receiptGrandTotal">₦0.00</div>
                 </div>
             </div>
 
@@ -327,11 +322,25 @@
         let storeSettings = JSON.parse(localStorage.getItem('cashier_store_settings')) || {
             storeName: "New Store X1",
             storeAddress: "Some address, fd, 23rf",
-            storePhone: "+333333333333",
+            storePhone: "+2348000000000",
             salesPerson: "Admin Admin"
         };
 
         let transactions = JSON.parse(localStorage.getItem('cashier_transactions')) || [];
+
+        // Toggle Settings Visibility
+        function toggleStoreSettings() {
+            const form = document.getElementById('storeSettingsForm');
+            const btn = document.getElementById('toggleSettingsBtn');
+            
+            if (form.classList.contains('hidden-form')) {
+                form.classList.remove('hidden-form');
+                btn.innerText = 'Hide';
+            } else {
+                form.classList.add('hidden-form');
+                btn.innerText = 'Show';
+            }
+        }
 
         // Initialize Store Form Fields
         function loadStoreSettings() {
@@ -351,7 +360,7 @@
                 salesPerson: document.getElementById('salesPerson').value
             };
             localStorage.setItem('cashier_store_settings', JSON.stringify(storeSettings));
-            alert("Universal Store Settings saved successfully!");
+            alert("Store settings saved successfully!");
         });
 
         // Add Transaction
@@ -360,7 +369,6 @@
 
             const quantity = parseFloat(document.getElementById('quantity').value);
             const price = parseFloat(document.getElementById('price').value);
-            const taxPercent = parseFloat(document.getElementById('taxPercent').value) || 0;
 
             const record = {
                 id: Date.now(),
@@ -369,7 +377,6 @@
                 category: document.getElementById('category').value,
                 quantity: quantity,
                 price: price,
-                taxPercent: taxPercent,
                 customerName: document.getElementById('customerName').value || 'Walk-In',
                 total: quantity * price
             };
@@ -379,7 +386,6 @@
 
             document.getElementById('cashierForm').reset();
             document.getElementById('quantity').value = "1";
-            document.getElementById('taxPercent').value = "12.0";
             document.getElementById('customerName').value = "Walk-In";
         });
 
@@ -411,8 +417,8 @@
                     <td>${item.category}</td>
                     <td>${item.item_name}</td>
                     <td>x ${item.quantity}</td>
-                    <td>$${item.price.toFixed(2)}</td>
-                    <td><strong>$${item.total.toFixed(2)}</strong></td>
+                    <td>₦${item.price.toFixed(2)}</td>
+                    <td><strong>₦${item.total.toFixed(2)}</strong></td>
                     <td style="text-align: center;">
                         <button class="action-btn" title="Download Receipt" onclick="printReceipt('${item.id}')">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
@@ -467,31 +473,24 @@
             const receiptItemList = document.getElementById('receiptItemList');
             receiptItemList.innerHTML = '';
 
-            let subtotal = 0;
-            let taxPercent = firstItem.taxPercent || 12;
+            let grandTotal = 0;
 
             itemsToPrint.forEach(item => {
-                const itemSubtotal = item.quantity * item.price;
-                subtotal += itemSubtotal;
+                const itemTotal = item.quantity * item.price;
+                grandTotal += itemTotal;
 
                 let itemHtml = `
                     <div class="item-row">
                         <div class="item-description">${item.item_name}</div>
                         <div class="item-qty">x ${item.quantity}</div>
-                        <div class="item-price">$${itemSubtotal.toFixed(2)}</div>
+                        <div class="item-price">₦${itemTotal.toFixed(2)}</div>
                     </div>
                     <div style="margin-bottom: 4px;">Sale</div>
                 `;
                 receiptItemList.innerHTML += itemHtml;
             });
 
-            const taxAmount = (subtotal * taxPercent) / 100;
-            const grandTotal = subtotal + taxAmount;
-
-            document.getElementById('receiptSubtotal').innerText = `$${subtotal.toFixed(2)}`;
-            document.getElementById('receiptTaxLabel').innerText = `${taxPercent} %`;
-            document.getElementById('receiptTax').innerText = `$${taxAmount.toFixed(2)}`;
-            document.getElementById('receiptGrandTotal').innerText = `$${grandTotal.toFixed(2)}`;
+            document.getElementById('receiptGrandTotal').innerText = `₦${grandTotal.toFixed(2)}`;
 
             window.print();
         }
@@ -502,7 +501,7 @@
                 return;
             }
 
-            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price", "Total", "Customer", "Sales Person"];
+            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price (NGN)", "Total (NGN)", "Customer", "Sales Person"];
             const rows = transactions.map(item => [
                 `"${item.orderNum}"`,
                 `"${item.category}"`,
