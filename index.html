@@ -280,6 +280,7 @@
             const price = parseFloat(document.getElementById('price').value);
             const total = qty * price;
 
+           // Locate where you construct the order record in addTransaction:
             const record = {
                 client_uuid: crypto.randomUUID(),
                 receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
@@ -290,7 +291,7 @@
                 subtotal: total,
                 grand_total: total,
                 created_at: new Date().toISOString(),
-                synced: false,
+                synced: 0, // <-- CHANGE THIS FROM false TO 0
                 items: [{ product_id: 1, quantity: qty, unit_price: price, subtotal: total }]
             };
 
@@ -328,7 +329,7 @@
                 if (!item.synced) unsyncedCount++;
                 const row = `<tr>
                     <td style="text-align: center;"><input type="checkbox" class="item-checkbox" value="${item.client_uuid}"></td>
-                    <td style="text-align: center;"><span class="sync-dot ${item.synced ? 'synced-true' : 'synced-false'}"></span></td>
+                    <td style="text-align: center;"><span class="sync-dot ${item.synced === 1 ? 'synced-true' : 'synced-false'}"></span></td>
                     <td>${item.receipt_number}</td>
                     <td>${item.item_name}</td>
                     <td>${item.quantity}</td>
@@ -356,7 +357,7 @@
             const index = tx.objectStore("orders").index("synced");
 
             const unsyncedOrders = await new Promise((res) => {
-                const req = index.getAll(false);
+                const req = index.getAll(0);
                 req.onsuccess = () => res(req.result);
             });
 
@@ -379,7 +380,7 @@
                             req.onsuccess = () => r(req.result);
                         });
                         if (item) {
-                            item.synced = true;
+                            item.synced = 1;
                             store.put(item);
                         }
                     }
