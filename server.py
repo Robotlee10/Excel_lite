@@ -41,7 +41,7 @@ def get_db():
 
 class OrderItemSchema(BaseModel):
     product_id: int
-    quantity: int
+    quantity: float  # Changed from int to float
     unit_price: float
     subtotal: float
 
