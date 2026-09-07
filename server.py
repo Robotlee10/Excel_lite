@@ -39,9 +39,11 @@ def get_db():
     finally:
         conn.close()
 
+from typing import List, Union
+
 class OrderItemSchema(BaseModel):
     product_id: int
-    quantity: float  # Changed from int to float
+    quantity: Union[int, float]  # Accepts both integer and decimal quantities
     unit_price: float
     subtotal: float
 
