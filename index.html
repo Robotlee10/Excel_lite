@@ -32,7 +32,7 @@
         .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
         .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; gap: 0.5rem; flex-wrap: wrap; }
         .card h2 { font-size: 1.125rem; font-weight: 600; }
-        .header-actions { display: flex; gap: 0.5rem; }
+        .header-actions { display: flex; gap: 0.5rem; align-items: center; }
 
         .toggle-btn { background: none; border: none; font-size: 0.85rem; color: var(--primary); font-weight: 600; cursor: pointer; text-decoration: underline; }
 
@@ -40,6 +40,9 @@
         label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.25rem; color: #334155; }
         input[type="text"], input[type="number"], select { width: 100%; padding: 0.5rem 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; background-color: #fff; }
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        .checkbox-label { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; font-size: 0.85rem; font-weight: 500; color: #334155; }
+        .checkbox-label input { width: 16px; height: 16px; cursor: pointer; }
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
@@ -218,11 +221,6 @@
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label for="customerName">Sold To</label>
-                        <input type="text" id="customerName" value="Walk-In">
-                    </div>
-
                     <button type="submit" class="btn btn-primary">Add Record</button>
                 </form>
             </div>
@@ -233,8 +231,19 @@
             <div class="card-header">
                 <h2>Processed Records</h2>
                 <div class="header-actions">
-                    <button type="button" class="btn btn-secondary" onclick="printReceipt('selected')">Generate Receipt</button>
-                    <button type="button" class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+                    <button type="button" class="btn btn-secondary" style="width: auto;" onclick="printReceipt('selected')">Generate Receipt</button>
+                    <button type="button" class="btn btn-success" style="width: auto;" onclick="exportToCSV()">Export CSV</button>
+                </div>
+            </div>
+
+            <!-- Optional Customer Name Section for Receipt Generation -->
+            <div style="background-color: #f1f5f9; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="includeCustomerName" onchange="toggleCustomerInput()">
+                    Include Customer Name on Receipt
+                </label>
+                <div id="customerInputGroup" class="hidden-form" style="margin-top: 0.5rem;">
+                    <input type="text" id="receiptCustomerName" placeholder="Enter Customer Name (e.g. Walk-In / John Doe)">
                 </div>
             </div>
             
@@ -280,8 +289,11 @@
             <div class="details-grid">
                 <div>Order #:</div>
                 <div id="receiptOrderNum">010900269558</div>
-                <div>Sold To:</div>
-                <div id="receiptSoldTo">Walk-In</div>
+                
+                <!-- Dynamic Sold To Field -->
+                <div id="receiptSoldToLabel" class="hidden-form">Sold To:</div>
+                <div id="receiptSoldToValue" class="hidden-form">Walk-In</div>
+
                 <div>Order Date:</div>
                 <div id="receiptDate">03/31/17</div>
                 <div>Order Time:</div>
@@ -342,6 +354,18 @@
             }
         }
 
+        // Toggle Optional Customer Input Field
+        function toggleCustomerInput() {
+            const checkbox = document.getElementById('includeCustomerName');
+            const group = document.getElementById('customerInputGroup');
+            
+            if (checkbox.checked) {
+                group.classList.remove('hidden-form');
+            } else {
+                group.classList.add('hidden-form');
+            }
+        }
+
         // Initialize Store Form Fields
         function loadStoreSettings() {
             document.getElementById('storeName').value = storeSettings.storeName;
@@ -377,7 +401,6 @@
                 category: document.getElementById('category').value,
                 quantity: quantity,
                 price: price,
-                customerName: document.getElementById('customerName').value || 'Walk-In',
                 total: quantity * price
             };
 
@@ -386,7 +409,6 @@
 
             document.getElementById('cashierForm').reset();
             document.getElementById('quantity').value = "1";
-            document.getElementById('customerName').value = "Walk-In";
         });
 
         function saveAndRender() {
@@ -465,10 +487,25 @@
 
             // Set Order Metadata
             document.getElementById('receiptOrderNum').innerText = firstItem.orderNum;
-            document.getElementById('receiptSoldTo').innerText = firstItem.customerName;
             document.getElementById('receiptDate').innerText = dateStr;
             document.getElementById('receiptTime').innerText = timeStr;
             document.getElementById('receiptSalesPerson').innerText = storeSettings.salesPerson;
+
+            // Check if Customer Name should be printed
+            const includeCustomer = document.getElementById('includeCustomerName').checked;
+            const customerNameInput = document.getElementById('receiptCustomerName').value.trim();
+            
+            const labelEl = document.getElementById('receiptSoldToLabel');
+            const valEl = document.getElementById('receiptSoldToValue');
+
+            if (includeCustomer) {
+                labelEl.classList.remove('hidden-form');
+                valEl.classList.remove('hidden-form');
+                valEl.innerText = customerNameInput || 'Walk-In';
+            } else {
+                labelEl.classList.add('hidden-form');
+                valEl.classList.add('hidden-form');
+            }
 
             const receiptItemList = document.getElementById('receiptItemList');
             receiptItemList.innerHTML = '';
@@ -501,7 +538,7 @@
                 return;
             }
 
-            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price (NGN)", "Total (NGN)", "Customer", "Sales Person"];
+            const headers = ["Order #", "Category", "Item Name", "Quantity", "Price (NGN)", "Total (NGN)", "Sales Person"];
             const rows = transactions.map(item => [
                 `"${item.orderNum}"`,
                 `"${item.category}"`,
@@ -509,7 +546,6 @@
                 item.quantity,
                 item.price.toFixed(2),
                 item.total.toFixed(2),
-                `"${item.customerName}"`,
                 `"${storeSettings.salesPerson}"`
             ]);
 
