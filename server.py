@@ -7,21 +7,23 @@ import psycopg2
 
 app = FastAPI(title="POS Sync Backend")
 
-# --- CORS MIDDLEWARE CONFIGURATION ---
+# --- FIXED CORS MIDDLEWARE CONFIGURATION ---
+# Note: Explicit origins are required when allow_credentials=True
+origins = [
+    "https://excel.robotlee.xyz",
+    "http://excel.robotlee.xyz",
+    "http://localhost:3000",
+    "http://127.0.0.1:5500",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://excel.robotlee.xyz",
-        "http://excel.robotlee.xyz",
-        "http://localhost:3000",
-        "http://127.0.0.1:5500",
-        "*"  # Allows all origins for unrestricted cross-origin syncing
-    ],
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Allows GET, POST, OPTIONS, PUT, DELETE
-    allow_headers=["*"],  # Allows all headers (Content-Type, Authorization, etc.)
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-# -------------------------------------
+# -------------------------------------------
 
 DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_NAME = os.getenv("DB_NAME", "pos_db")
