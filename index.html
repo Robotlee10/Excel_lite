@@ -36,7 +36,7 @@
 
         .form-group { margin-bottom: 1rem; }
         label { display: block; font-size: 0.875rem; font-weight: 500; margin-bottom: 0.375rem; color: #334155; }
-        input, select { width: 100%; padding: 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; background-color: #fff; }
+        input[type="text"], input[type="number"], select { width: 100%; padding: 0.625rem; border: 1px solid var(--border); border-radius: 6px; font-size: 0.875rem; background-color: #fff; }
         input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
 
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
@@ -62,10 +62,20 @@
 
         .empty-state { text-align: center; padding: 2rem; color: var(--text-muted); font-size: 0.875rem; }
 
-        /* Printable Receipt Styling (Matches Image Template) */
+        /* Printable Receipt Styling - Optimized strictly for Single Page */
         #receiptContainer { display: none; }
 
         @media print {
+            @page {
+                size: A4 portrait;
+                margin: 0;
+            }
+            html, body {
+                height: 100%;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden;
+            }
             body * { visibility: hidden; }
             #receiptContainer, #receiptContainer * { visibility: visible; }
             #receiptContainer {
@@ -73,19 +83,22 @@
                 position: absolute;
                 left: 0;
                 top: 0;
-                width: 100%;
+                width: 100vw;
+                height: 100vh;
                 padding: 0;
                 background: white;
+                box-sizing: border-box;
             }
 
             .receipt-box {
                 width: 100%;
-                max-width: 800px;
-                margin: 0 auto;
+                height: 100vh;
                 padding: 40px;
                 position: relative;
                 box-sizing: border-box;
-                min-height: 1000px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
             }
 
             /* Custom Header Graphic Shapes */
@@ -94,7 +107,7 @@
                 top: 0;
                 left: 0;
                 width: 100%;
-                height: 120px;
+                height: 100px;
                 overflow: hidden;
                 z-index: 1;
             }
@@ -103,7 +116,7 @@
                 top: -50px;
                 left: -50px;
                 width: 110%;
-                height: 120px;
+                height: 110px;
                 background: var(--brand-blue);
                 transform: rotate(-5deg);
             }
@@ -112,7 +125,7 @@
                 top: -30px;
                 left: -20px;
                 width: 110%;
-                height: 90px;
+                height: 85px;
                 background: var(--brand-gold);
                 transform: rotate(-3deg);
             }
@@ -121,11 +134,11 @@
                 position: relative;
                 z-index: 2;
                 text-align: right;
-                margin-top: 40px;
-                margin-bottom: 30px;
+                margin-top: 20px;
+                margin-bottom: 20px;
             }
             .receipt-title {
-                font-size: 38px;
+                font-size: 32px;
                 font-weight: 800;
                 letter-spacing: 2px;
                 color: #000;
@@ -133,9 +146,9 @@
                 text-transform: uppercase;
             }
             .receipt-date {
-                font-size: 18px;
+                font-size: 16px;
                 font-weight: 600;
-                margin-top: 20px;
+                margin-top: 15px;
                 color: #000;
             }
 
@@ -143,14 +156,14 @@
             .receipt-table {
                 width: 100%;
                 border-collapse: collapse;
-                margin-top: 20px;
+                margin-top: 10px;
                 position: relative;
                 z-index: 2;
             }
             .receipt-table th, .receipt-table td {
                 border: 1px solid #718096;
-                padding: 10px 12px;
-                font-size: 14px;
+                padding: 8px 10px;
+                font-size: 13px;
                 color: #000;
             }
             .receipt-table th {
@@ -165,7 +178,7 @@
             .receipt-table td.total-col { width: 20%; text-align: right; }
 
             .summary-row td { font-weight: 600; }
-            .grand-total-row td { font-weight: 800; text-transform: uppercase; font-size: 15px; }
+            .grand-total-row td { font-weight: 800; text-transform: uppercase; font-size: 14px; }
 
             /* Footer Graphic Shapes */
             .receipt-footer-graphics {
@@ -173,15 +186,15 @@
                 bottom: 0;
                 left: 0;
                 width: 100%;
-                height: 80px;
+                height: 70px;
                 overflow: hidden;
             }
             .footer-gold {
                 position: absolute;
-                bottom: 15px;
+                bottom: 12px;
                 left: -10px;
                 width: 90%;
-                height: 35px;
+                height: 30px;
                 background: var(--brand-gold);
                 transform: rotate(-1deg);
             }
@@ -190,15 +203,15 @@
                 bottom: 0;
                 left: 0;
                 width: 100%;
-                height: 25px;
+                height: 20px;
                 background: var(--brand-blue);
             }
             .footer-circle {
                 position: absolute;
-                bottom: 20px;
+                bottom: 15px;
                 right: 40px;
-                width: 45px;
-                height: 45px;
+                width: 40px;
+                height: 40px;
                 background: var(--brand-gold);
                 border-radius: 50%;
             }
@@ -252,7 +265,7 @@
             <div class="card-header">
                 <h2>Processed Records</h2>
                 <div class="header-actions">
-                    <button type="button" class="btn btn-secondary" onclick="printReceipt('all')">Receipt All</button>
+                    <button type="button" class="btn btn-secondary" onclick="printReceipt('selected')">Generate Receipt</button>
                     <button type="button" class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
                 </div>
             </div>
@@ -261,12 +274,15 @@
                 <table>
                     <thead>
                         <tr>
+                            <th style="width: 40px; text-align: center;">
+                                <input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+                            </th>
                             <th>Category</th>
                             <th>Item Name</th>
                             <th>Qty</th>
                             <th>Price</th>
                             <th>Total</th>
-                            <th style="text-align: center;">Receipt</th>
+                            <th style="text-align: center;">Single</th>
                         </tr>
                     </thead>
                     <tbody id="dataTableBody"></tbody>
@@ -279,49 +295,51 @@
     <!-- Printable Receipt Element -->
     <div id="receiptContainer">
         <div class="receipt-box">
-            <div class="receipt-header-graphics">
-                <div class="shape-gold"></div>
-                <div class="shape-blue"></div>
-            </div>
+            <div>
+                <div class="receipt-header-graphics">
+                    <div class="shape-gold"></div>
+                    <div class="shape-blue"></div>
+                </div>
 
-            <div class="receipt-title-block">
-                <div class="receipt-title">SALES<br>RECEIPT</div>
-                <div class="receipt-date">Date: <span id="receiptDate">__/__/____</span></div>
-            </div>
+                <div class="receipt-title-block">
+                    <div class="receipt-title">SALES<br>RECEIPT</div>
+                    <div class="receipt-date">Date: <span id="receiptDate">__/__/____</span></div>
+                </div>
 
-            <table class="receipt-table">
-                <thead>
-                    <tr>
-                        <th>QTY</th>
-                        <th>DESCRIPTION</th>
-                        <th>PRICE</th>
-                        <th>TOTAL PRICE</th>
-                    </tr>
-                </thead>
-                <tbody id="receiptRows"></tbody>
-                <tfoot>
-                    <tr class="summary-row">
-                        <td colspan="2" style="border: none;"></td>
-                        <td>Subtotal</td>
-                        <td id="receiptSubtotal" style="text-align: right;">$0.00</td>
-                    </tr>
-                    <tr class="summary-row">
-                        <td colspan="2" style="border: none;"></td>
-                        <td>Discounts</td>
-                        <td style="text-align: right;">$0.00</td>
-                    </tr>
-                    <tr class="summary-row">
-                        <td colspan="2" style="border: none;"></td>
-                        <td>Taxes</td>
-                        <td style="text-align: right;">$0.00</td>
-                    </tr>
-                    <tr class="grand-total-row">
-                        <td colspan="2" style="border: none;"></td>
-                        <td>GRAND TOTAL</td>
-                        <td id="receiptGrandTotal" style="text-align: right;">$0.00</td>
-                    </tr>
-                </tfoot>
-            </table>
+                <table class="receipt-table">
+                    <thead>
+                        <tr>
+                            <th>QTY</th>
+                            <th>DESCRIPTION</th>
+                            <th>PRICE</th>
+                            <th>TOTAL PRICE</th>
+                        </tr>
+                    </thead>
+                    <tbody id="receiptRows"></tbody>
+                    <tfoot>
+                        <tr class="summary-row">
+                            <td colspan="2" style="border: none;"></td>
+                            <td>Subtotal</td>
+                            <td id="receiptSubtotal" style="text-align: right;">$0.00</td>
+                        </tr>
+                        <tr class="summary-row">
+                            <td colspan="2" style="border: none;"></td>
+                            <td>Discounts</td>
+                            <td style="text-align: right;">$0.00</td>
+                        </tr>
+                        <tr class="summary-row">
+                            <td colspan="2" style="border: none;"></td>
+                            <td>Taxes</td>
+                            <td style="text-align: right;">$0.00</td>
+                        </tr>
+                        <tr class="grand-total-row">
+                            <td colspan="2" style="border: none;"></td>
+                            <td>GRAND TOTAL</td>
+                            <td id="receiptGrandTotal" style="text-align: right;">$0.00</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
 
             <div class="receipt-footer-graphics">
                 <div class="footer-gold"></div>
@@ -375,6 +393,9 @@
             emptyState.style.display = 'none';
             sortedData.forEach(item => {
                 const row = `<tr>
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="item-checkbox" value="${item.id}">
+                    </td>
                     <td>${item.category}</td>
                     <td>${item.item_name}</td>
                     <td>${item.quantity}</td>
@@ -392,20 +413,28 @@
             });
         }
 
-        function printReceipt(targetId) {
+        function toggleSelectAll(masterCheckbox) {
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+        }
+
+        function printReceipt(targetMode) {
             let itemsToPrint = [];
-            if (targetId === 'all') {
-                itemsToPrint = transactions;
+
+            if (targetMode === 'selected') {
+                const selectedBoxes = document.querySelectorAll('.item-checkbox:checked');
+                const selectedIds = Array.from(selectedBoxes).map(cb => parseInt(cb.value, 10));
+                itemsToPrint = transactions.filter(item => selectedIds.includes(item.id));
             } else {
-                itemsToPrint = transactions.filter(item => item.id == targetId);
+                itemsToPrint = transactions.filter(item => item.id == targetMode);
             }
 
             if (itemsToPrint.length === 0) {
-                alert("No items selected to generate a receipt.");
+                alert("Please select at least one item using the checkboxes to generate a receipt.");
                 return;
             }
 
-            // Fill date
+            // Fill receipt date
             const today = new Date().toLocaleDateString('en-US');
             document.getElementById('receiptDate').innerText = today;
 
@@ -414,7 +443,7 @@
             receiptRows.innerHTML = '';
 
             let grandTotal = 0;
-            const targetRowCount = 8; // Maintain consistent layout height
+            const targetRowCount = 6; // Compact row count ensuring single-page print fit
 
             itemsToPrint.forEach(item => {
                 grandTotal += item.total;
@@ -428,7 +457,7 @@
                 `;
             });
 
-            // Fill empty rows for template consistency
+            // Fill empty rows for structural spacing
             const emptyRowsNeeded = targetRowCount - itemsToPrint.length;
             for (let i = 0; i < emptyRowsNeeded; i++) {
                 receiptRows.innerHTML += `
@@ -444,7 +473,7 @@
             document.getElementById('receiptSubtotal').innerText = `$${grandTotal.toFixed(2)}`;
             document.getElementById('receiptGrandTotal').innerText = `$${grandTotal.toFixed(2)}`;
 
-            // Trigger print dialog (users can print or save as PDF)
+            // Trigger window print dialog
             window.print();
         }
 
