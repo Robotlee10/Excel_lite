@@ -363,7 +363,7 @@
             if (unsyncedOrders.length === 0) return;
 
             try {
-                const response = await fetch("/api/v1/sync/orders", {
+                const response = await fetch("https://excel-lite.onrender.com/api/v1/sync/orders", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify(unsyncedOrders)
