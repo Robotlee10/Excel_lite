@@ -86,8 +86,15 @@ def sync_orders(orders: List[SyncOrderSchema], db_conn=Depends(get_db)):
                 
                 result = cursor.fetchone()
                 
-                if result:
+                # If ON CONFLICT DO NOTHING skipped an existing record, fetch its ID
+                if not result:
+                    cursor.execute("SELECT id FROM orders WHERE client_uuid = %s;", (order.client_uuid,))
+                    res = cursor.fetchone()
+                    order_id = res[0] if res else None
+                else:
                     order_id = result[0]
+
+                if order_id:
                     for item in order.items:
                         cursor.execute("""
                             INSERT INTO order_items (order_id, product_id, quantity, unit_price, subtotal)
@@ -98,7 +105,8 @@ def sync_orders(orders: List[SyncOrderSchema], db_conn=Depends(get_db)):
                 
             except Exception as e:
                 db_conn.rollback()
-                raise HTTPException(status_code=500, detail=f"Sync failed on {order.client_uuid}: {str(e)}")
+                # EXPOSE DETAILED ERROR FOR DEBUGGING:
+                raise HTTPException(status_code=500, detail=f"Database execution error on {order.client_uuid}: {str(e)}")
 
         db_conn.commit()
 
