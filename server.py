@@ -62,6 +62,22 @@ class SyncOrderSchema(BaseModel):
 def read_root():
     return {"status": "online", "message": "POS Sync Backend Engine Active"}
 
+@app.get("/api/v1/products")
+def get_products(db_conn=Depends(get_db)):
+    with db_conn.cursor() as cursor:
+        cursor.execute("SELECT id, barcode, name, category, price FROM products;")
+        rows = cursor.fetchall()
+        products = {
+            row[1]: {
+                "product_id": row[0],
+                "name": row[2],
+                "category": row[3],
+                "price": float(row[4])
+            }
+            for row in rows
+        }
+    return products
+
 @app.post("/api/v1/sync/orders")
 def sync_orders(orders: List[SyncOrderSchema], db_conn=Depends(get_db)):
     synced_uuids = []
