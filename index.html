@@ -349,64 +349,73 @@
             alert("Settings updated!");
         });
 
-        async function saveTransactionRecord(name, category, qty, price, productId = 1) {
-            const db = await openIndexedDB();
-            
-            // 1. Check for un-synced matching items in IndexedDB
-            const txRead = db.transaction("orders", "readonly");
-            const index = txRead.objectStore("orders").index("synced");
-            
-            const unsyncedOrders = await new Promise((res) => {
-                const req = index.getAll(0);
-                req.onsuccess = () => res(req.result || []);
-            });
+       async function saveTransactionRecord(name, category, qty, price, productId = 1) {
+    const db = await openIndexedDB();
+    
+    // Open a SINGLE readwrite transaction for both searching and updating
+    const tx = db.transaction("orders", "readwrite");
+    const store = tx.objectStore("orders");
+    const index = store.index("synced");
 
-            const existingItem = unsyncedOrders.find(
-                order => order.item_name.toLowerCase() === name.toLowerCase() && order.price === price
-            );
+    // Fetch all unsynced items within the active transaction
+    const unsyncedOrders = await new Promise((res, rej) => {
+        const req = index.getAll(0);
+        req.onsuccess = () => res(req.result || []);
+        req.onerror = () => rej(req.error);
+    });
 
-            const txWrite = db.transaction("orders", "readwrite");
-            const store = txWrite.objectStore("orders");
+    // Match by item name (case-insensitive) and price
+    const existingItem = unsyncedOrders.find(
+        order => order.item_name.toLowerCase() === name.toLowerCase() && order.price === price
+    );
 
-            if (existingItem) {
-                // 2. Increment quantity on existing local row
-                existingItem.quantity += qty;
-                const newTotal = existingItem.quantity * price;
-                existingItem.subtotal = newTotal;
-                existingItem.grand_total = newTotal;
-                if (existingItem.items && existingItem.items[0]) {
-                    existingItem.items[0].quantity = existingItem.quantity;
-                    existingItem.items[0].subtotal = newTotal;
-                }
-
-                await store.put(existingItem);
-            } else {
-                // 3. Add as a new entry if no match exists
-                const total = qty * price;
-                const record = {
-                    client_uuid: crypto.randomUUID(),
-                    receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
-                    item_name: name,
-                    category: category,
-                    quantity: qty,
-                    price: price,
-                    subtotal: total,
-                    grand_total: total,
-                    created_at: new Date().toISOString(),
-                    synced: 0,
-                    items: [{ product_id: productId, quantity: qty, unit_price: price, subtotal: total }]
-                };
-
-                await store.add(record);
-            }
-
-            document.getElementById('cashierForm').reset();
-            document.getElementById('quantity').value = "1";
-            itemNameInput.focus();
-
-            renderTable();
-            syncOfflineOrders();
+    if (existingItem) {
+        // Increment quantity and update totals
+        existingItem.quantity += qty;
+        const newTotal = existingItem.quantity * price;
+        existingItem.subtotal = newTotal;
+        existingItem.grand_total = newTotal;
+        
+        if (existingItem.items && existingItem.items[0]) {
+            existingItem.items[0].quantity = existingItem.quantity;
+            existingItem.items[0].subtotal = newTotal;
         }
+
+        store.put(existingItem);
+    } else {
+        // Insert new line item
+        const total = qty * price;
+        const record = {
+            client_uuid: crypto.randomUUID(),
+            receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
+            item_name: name,
+            category: category,
+            quantity: qty,
+            price: price,
+            subtotal: total,
+            grand_total: total,
+            created_at: new Date().toISOString(),
+            synced: 0,
+            items: [{ product_id: productId, quantity: qty, unit_price: price, subtotal: total }]
+        };
+
+        store.add(record);
+    }
+
+    // Wait for the single transaction to complete
+    await new Promise((resolve, reject) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+
+    // Reset input fields
+    document.getElementById('cashierForm').reset();
+    document.getElementById('quantity').value = "1";
+    itemNameInput.focus();
+
+    renderTable();
+    syncOfflineOrders();
+}
 
         async function addTransaction(e) {
             e.preventDefault();
