@@ -278,70 +278,57 @@
             salesPerson: "Admin"
         };
     
-// Initialize from browser cache (localStorage) or default empty object
-let mockProductCatalog = JSON.parse(localStorage.getItem('cached_products')) || {};
+        // Initialize product catalog from local storage
+        let mockProductCatalog = JSON.parse(localStorage.getItem('cached_products')) || {};
 
-// Fetch products dynamically from Supabase
-async function refreshProductCatalog() {
-    if (!navigator.onLine) return;
+        // Fetch products dynamically from Supabase
+        async function refreshProductCatalog() {
+            if (!navigator.onLine) return;
 
-    try {
-        const res = await fetch("https://excel-lite.onrender.com/api/v1/products?t=" + Date.now(), {
-            cache: 'no-store'
-        });
+            try {
+                const res = await fetch("https://excel-lite.onrender.com/api/v1/products?t=" + Date.now(), {
+                    cache: 'no-store'
+                });
 
-        if (res.ok) {
-            const data = await res.json();
-            mockProductCatalog = data;
-            localStorage.setItem('cached_products', JSON.stringify(data));
-            console.log("Product catalog ready:", Object.keys(mockProductCatalog).length, "items loaded.");
-        }
-    } catch (err) {
-        console.log("Using cached product catalog.");
-    }
-}
-
-// Updated Barcode Hardware Gun Listener
-const itemNameInput = document.getElementById('itemName');
-
-itemNameInput.addEventListener('keydown', async function(e) {
-    if (e.key === 'Enter') {
-        e.preventDefault(); // Stop form submission
-        
-        const rawCode = this.value.trim();
-        if (!rawCode) return;
-
-        // Check if scanned value exists in the catalog (case/space sanitized)
-        const product = mockProductCatalog[rawCode];
-
-        if (product) {
-            // Auto-fill form controls
-            document.getElementById('itemName').value = product.name;
-            document.getElementById('price').value = product.price;
-            document.getElementById('category').value = product.category || 'General';
-
-            // Instantly add to cart & clear field for next scan
-            await saveTransactionRecord(product.name, product.category || 'General', 1, product.price, product.product_id);
-            this.value = '';
-            console.log(`Auto-added: ${product.name} (₦${product.price})`);
-        } else {
-            // Fallback for manual item entries not in barcode database
-            if (document.getElementById('price').value) {
-                document.getElementById('cashierForm').requestSubmit();
-            } else {
-                alert(`Barcode "${rawCode}" not found in database. Enter price manually to add.`);
+                if (res.ok) {
+                    const data = await res.json();
+                    mockProductCatalog = data;
+                    localStorage.setItem('cached_products', JSON.stringify(data));
+                    console.log("Product catalog ready:", Object.keys(mockProductCatalog).length, "items loaded.");
+                }
+            } catch (err) {
+                console.log("Using cached product catalog.");
             }
         }
-    }
-});
 
-// Fetch products when app loads
-window.onload = async () => {
-    renderTable();
-    await refreshProductCatalog(); // Wait for product catalog to load first
-    syncOfflineOrders();
-    setInterval(syncOfflineOrders, 20000);
-};
+        // Single Barcode Input Definition
+        const itemNameInput = document.getElementById('itemName');
+
+        itemNameInput.addEventListener('keydown', async function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                
+                const rawCode = this.value.trim();
+                if (!rawCode) return;
+
+                const product = mockProductCatalog[rawCode];
+
+                if (product) {
+                    document.getElementById('itemName').value = product.name;
+                    document.getElementById('price').value = product.price;
+                    document.getElementById('category').value = product.category || 'General';
+
+                    await saveTransactionRecord(product.name, product.category || 'General', 1, product.price, product.product_id);
+                    this.value = '';
+                } else {
+                    if (document.getElementById('price').value) {
+                        document.getElementById('cashierForm').requestSubmit();
+                    } else {
+                        alert(`Barcode "${rawCode}" not found in database. Enter price manually.`);
+                    }
+                }
+            }
+        });
 
         function toggleStoreSettings() {
             const form = document.getElementById('storeSettingsForm');
@@ -359,33 +346,6 @@ window.onload = async () => {
             };
             localStorage.setItem('cashier_store_settings', JSON.stringify(storeSettings));
             alert("Settings updated!");
-        });
-
-        // Barcode Hardware Gun Event Handling
-        const itemNameInput = document.getElementById('itemName');
-
-        itemNameInput.addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                const code = this.value.trim();
-                if (!code) return;
-
-                if (mockProductCatalog[code]) {
-                    const p = mockProductCatalog[code];
-                    document.getElementById('itemName').value = p.name;
-                    document.getElementById('price').value = p.price;
-                    document.getElementById('category').value = p.category;
-                    
-                    // Trigger record save immediately for scanned item
-                    saveTransactionRecord(p.name, p.category, 1, p.price, p.product_id);
-                    this.value = '';
-                } else {
-                    // Manual item entry fallback if code isn't in catalog
-                    if (document.getElementById('price').value) {
-                        document.getElementById('cashierForm').requestSubmit();
-                    }
-                }
-            }
         });
 
         async function saveTransactionRecord(name, category, qty, price, productId = 1) {
@@ -603,8 +563,10 @@ window.onload = async () => {
         window.addEventListener("online", syncOfflineOrders);
         window.addEventListener("offline", syncOfflineOrders);
 
-        window.onload = () => {
+        // Single Unified App Initialization
+        window.onload = async () => {
             renderTable();
+            await refreshProductCatalog();
             syncOfflineOrders();
             setInterval(syncOfflineOrders, 20000);
         };
