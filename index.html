@@ -279,25 +279,30 @@
         };
 
        // Initialize from browser cache (localStorage) or default empty object
+// Initialize from browser cache (localStorage) or default empty object
 let mockProductCatalog = JSON.parse(localStorage.getItem('cached_products')) || {};
 
-// Fetch latest products from Render/Supabase
 async function refreshProductCatalog() {
     if (!navigator.onLine) return;
 
     try {
-        // Adding a timestamp query parameter prevents browser HTTP caching
-        const res = await fetch("https://excel-lite.onrender.com/api/v1/products?t=" + Date.now());
+        // Appending Date.now() guarantees the browser never serves a cached response
+        const res = await fetch("https://excel-lite.onrender.com/api/v1/products?t=" + Date.now(), {
+            cache: 'no-store'
+        });
+
         if (res.ok) {
             const data = await res.json();
             mockProductCatalog = data;
+            
+            // Update local storage cache for offline use
             localStorage.setItem('cached_products', JSON.stringify(data));
-            console.log("Product catalog updated successfully!", data);
+            console.log("Fresh product catalog loaded from Supabase:", data);
         } else {
-            console.error("Failed to fetch catalog, status:", res.status);
+            console.error("Failed to fetch products, HTTP status:", res.status);
         }
     } catch (err) {
-        console.log("Network error fetching catalog; using cached catalog.", err);
+        console.log("Offline or server unreachable; using cached product catalog.", err);
     }
 }
 // Fetch products when app loads
