@@ -286,19 +286,20 @@ async function refreshProductCatalog() {
     if (!navigator.onLine) return;
 
     try {
-        const res = await fetch("https://excel-lite.onrender.com/api/v1/products");
+        // Adding a timestamp query parameter prevents browser HTTP caching
+        const res = await fetch("https://excel-lite.onrender.com/api/v1/products?t=" + Date.now());
         if (res.ok) {
             const data = await res.json();
             mockProductCatalog = data;
-            // Cache locally so barcode scanning works offline
             localStorage.setItem('cached_products', JSON.stringify(data));
-            console.log("Product catalog synced from database!");
+            console.log("Product catalog updated successfully!", data);
+        } else {
+            console.error("Failed to fetch catalog, status:", res.status);
         }
     } catch (err) {
-        console.log("Using cached product catalog.");
+        console.log("Network error fetching catalog; using cached catalog.", err);
     }
 }
-
 // Fetch products when app loads
 window.onload = () => {
     renderTable();

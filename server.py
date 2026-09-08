@@ -62,21 +62,25 @@ class SyncOrderSchema(BaseModel):
 def read_root():
     return {"status": "online", "message": "POS Sync Backend Engine Active"}
 
+# --- DYNAMIC PRODUCT CATALOG FETCH ENDPOINT ---
 @app.get("/api/v1/products")
 def get_products(db_conn=Depends(get_db)):
-    with db_conn.cursor() as cursor:
-        cursor.execute("SELECT id, barcode, name, category, price FROM products;")
-        rows = cursor.fetchall()
-        products = {
-            row[1]: {
-                "product_id": row[0],
-                "name": row[2],
-                "category": row[3],
-                "price": float(row[4])
+    try:
+        with db_conn.cursor() as cursor:
+            cursor.execute("SELECT id, barcode, name, category, price FROM products WHERE barcode IS NOT NULL;")
+            rows = cursor.fetchall()
+            products = {
+                row[1]: {
+                    "product_id": row[0],
+                    "name": row[2],
+                    "category": row[3],
+                    "price": float(row[4])
+                }
+                for row in rows
             }
-            for row in rows
-        }
-    return products
+        return products
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch products: {str(e)}")
 
 @app.post("/api/v1/sync/orders")
 def sync_orders(orders: List[SyncOrderSchema], db_conn=Depends(get_db)):
@@ -121,7 +125,6 @@ def sync_orders(orders: List[SyncOrderSchema], db_conn=Depends(get_db)):
                 
             except Exception as e:
                 db_conn.rollback()
-                # EXPOSE DETAILED ERROR FOR DEBUGGING:
                 raise HTTPException(status_code=500, detail=f"Database execution error on {order.client_uuid}: {str(e)}")
 
         db_conn.commit()
