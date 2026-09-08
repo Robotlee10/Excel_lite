@@ -277,16 +277,15 @@
             storeAddress: "Plot 12 Commercial Way, Lagos",
             salesPerson: "Admin"
         };
-
-       // Initialize from browser cache (localStorage) or default empty object
+    
 // Initialize from browser cache (localStorage) or default empty object
 let mockProductCatalog = JSON.parse(localStorage.getItem('cached_products')) || {};
 
+// Fetch products dynamically from Supabase
 async function refreshProductCatalog() {
     if (!navigator.onLine) return;
 
     try {
-        // Appending Date.now() guarantees the browser never serves a cached response
         const res = await fetch("https://excel-lite.onrender.com/api/v1/products?t=" + Date.now(), {
             cache: 'no-store'
         });
@@ -294,22 +293,53 @@ async function refreshProductCatalog() {
         if (res.ok) {
             const data = await res.json();
             mockProductCatalog = data;
-            
-            // Update local storage cache for offline use
             localStorage.setItem('cached_products', JSON.stringify(data));
-            console.log("Fresh product catalog loaded from Supabase:", data);
-        } else {
-            console.error("Failed to fetch products, HTTP status:", res.status);
+            console.log("Product catalog ready:", Object.keys(mockProductCatalog).length, "items loaded.");
         }
     } catch (err) {
-        console.log("Offline or server unreachable; using cached product catalog.", err);
+        console.log("Using cached product catalog.");
     }
 }
+
+// Updated Barcode Hardware Gun Listener
+const itemNameInput = document.getElementById('itemName');
+
+itemNameInput.addEventListener('keydown', async function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault(); // Stop form submission
+        
+        const rawCode = this.value.trim();
+        if (!rawCode) return;
+
+        // Check if scanned value exists in the catalog (case/space sanitized)
+        const product = mockProductCatalog[rawCode];
+
+        if (product) {
+            // Auto-fill form controls
+            document.getElementById('itemName').value = product.name;
+            document.getElementById('price').value = product.price;
+            document.getElementById('category').value = product.category || 'General';
+
+            // Instantly add to cart & clear field for next scan
+            await saveTransactionRecord(product.name, product.category || 'General', 1, product.price, product.product_id);
+            this.value = '';
+            console.log(`Auto-added: ${product.name} (₦${product.price})`);
+        } else {
+            // Fallback for manual item entries not in barcode database
+            if (document.getElementById('price').value) {
+                document.getElementById('cashierForm').requestSubmit();
+            } else {
+                alert(`Barcode "${rawCode}" not found in database. Enter price manually to add.`);
+            }
+        }
+    }
+});
+
 // Fetch products when app loads
-window.onload = () => {
+window.onload = async () => {
     renderTable();
+    await refreshProductCatalog(); // Wait for product catalog to load first
     syncOfflineOrders();
-    refreshProductCatalog();
     setInterval(syncOfflineOrders, 20000);
 };
 
