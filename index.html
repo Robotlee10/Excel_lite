@@ -278,13 +278,34 @@
             salesPerson: "Admin"
         };
 
-        // Demo Barcode Database Map
-        const mockProductCatalog = {
-            "6151100001234": { name: "Peak Milk Powder 400g", price: 3200.00, category: "Groceries", product_id: 101 },
-            "8901030005678": { name: "Indomie Super Pack 120g", price: 450.00, category: "Groceries", product_id: 102 },
-            "6001050009999": { name: "Coca Cola 50ml PET", price: 350.00, category: "Groceries", product_id: 103 },
-            "012345678905": { name: "USB Type-C Fast Cable", price: 2500.00, category: "Electronics", product_id: 104 }
-        };
+       // Initialize from browser cache (localStorage) or default empty object
+let mockProductCatalog = JSON.parse(localStorage.getItem('cached_products')) || {};
+
+// Fetch latest products from Render/Supabase
+async function refreshProductCatalog() {
+    if (!navigator.onLine) return;
+
+    try {
+        const res = await fetch("https://excel-lite.onrender.com/api/v1/products");
+        if (res.ok) {
+            const data = await res.json();
+            mockProductCatalog = data;
+            // Cache locally so barcode scanning works offline
+            localStorage.setItem('cached_products', JSON.stringify(data));
+            console.log("Product catalog synced from database!");
+        }
+    } catch (err) {
+        console.log("Using cached product catalog.");
+    }
+}
+
+// Fetch products when app loads
+window.onload = () => {
+    renderTable();
+    syncOfflineOrders();
+    refreshProductCatalog();
+    setInterval(syncOfflineOrders, 20000);
+};
 
         function toggleStoreSettings() {
             const form = document.getElementById('storeSettingsForm');
