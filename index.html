@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enterprise Cashier POS Terminal</title>
+    <title>SyncCart</title>
+    <link class="js-meta-favicon" rel="icon" type="image/png" href="/favicon.png">
     <!-- HTML5 QR Code / Barcode Library for Camera Scanning -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
@@ -124,8 +125,8 @@
 
     <div class="top-bar">
         <div>
-            <h1>Cashier POS Terminal</h1>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Press <kbd>F2</kbd> anywhere to print selected items receipt</p>
+            <h1>SyncCart</h1>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Welcome <kbd></kbd></p>
         </div>
         <div class="status-container">
             <span id="networkStatus" class="status-badge status-online">● Online</span>
@@ -273,9 +274,9 @@
         }
 
         let storeSettings = JSON.parse(localStorage.getItem('cashier_store_settings')) || {
-            storeName: "Central Mart Terminal",
-            storeAddress: "Plot 12 Commercial Way, Lagos",
-            salesPerson: "Admin"
+            storeName: "Robotlee Store",
+            storeAddress: "Molete Ibadan",
+            salesPerson: "Ahmad"
         };
     
         // Initialize product catalog from local storage
@@ -349,24 +350,55 @@
         });
 
         async function saveTransactionRecord(name, category, qty, price, productId = 1) {
-            const total = qty * price;
-            const record = {
-                client_uuid: crypto.randomUUID(),
-                receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
-                item_name: name,
-                category: category,
-                quantity: qty,
-                price: price,
-                subtotal: total,
-                grand_total: total,
-                created_at: new Date().toISOString(),
-                synced: 0,
-                items: [{ product_id: productId, quantity: qty, unit_price: price, subtotal: total }]
-            };
-
             const db = await openIndexedDB();
-            const tx = db.transaction("orders", "readwrite");
-            await tx.objectStore("orders").add(record);
+            
+            // 1. Check for un-synced matching items in IndexedDB
+            const txRead = db.transaction("orders", "readonly");
+            const index = txRead.objectStore("orders").index("synced");
+            
+            const unsyncedOrders = await new Promise((res) => {
+                const req = index.getAll(0);
+                req.onsuccess = () => res(req.result || []);
+            });
+
+            const existingItem = unsyncedOrders.find(
+                order => order.item_name.toLowerCase() === name.toLowerCase() && order.price === price
+            );
+
+            const txWrite = db.transaction("orders", "readwrite");
+            const store = txWrite.objectStore("orders");
+
+            if (existingItem) {
+                // 2. Increment quantity on existing local row
+                existingItem.quantity += qty;
+                const newTotal = existingItem.quantity * price;
+                existingItem.subtotal = newTotal;
+                existingItem.grand_total = newTotal;
+                if (existingItem.items && existingItem.items[0]) {
+                    existingItem.items[0].quantity = existingItem.quantity;
+                    existingItem.items[0].subtotal = newTotal;
+                }
+
+                await store.put(existingItem);
+            } else {
+                // 3. Add as a new entry if no match exists
+                const total = qty * price;
+                const record = {
+                    client_uuid: crypto.randomUUID(),
+                    receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
+                    item_name: name,
+                    category: category,
+                    quantity: qty,
+                    price: price,
+                    subtotal: total,
+                    grand_total: total,
+                    created_at: new Date().toISOString(),
+                    synced: 0,
+                    items: [{ product_id: productId, quantity: qty, unit_price: price, subtotal: total }]
+                };
+
+                await store.add(record);
+            }
 
             document.getElementById('cashierForm').reset();
             document.getElementById('quantity').value = "1";
@@ -526,16 +558,34 @@
             document.getElementById('receiptCashier').innerText = "Cashier: " + storeSettings.salesPerson;
             document.getElementById('receiptDate').innerText = "Date: " + new Date().toLocaleString();
 
-            const listContainer = document.getElementById('receiptItemList');
-            listContainer.innerHTML = '';
+            // Aggregation: Consolidate identical selected items into a single line
+            const consolidatedMap = {};
             let grandTotal = 0;
 
             itemsToPrint.forEach(item => {
+                const key = item.item_name.toLowerCase() + "_" + item.price;
+                if (consolidatedMap[key]) {
+                    consolidatedMap[key].quantity += item.quantity;
+                    consolidatedMap[key].subtotal += item.grand_total;
+                } else {
+                    consolidatedMap[key] = {
+                        name: item.item_name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        subtotal: item.grand_total
+                    };
+                }
                 grandTotal += item.grand_total;
+            });
+
+            const listContainer = document.getElementById('receiptItemList');
+            listContainer.innerHTML = '';
+
+            Object.values(consolidatedMap).forEach(item => {
                 listContainer.innerHTML += `
                     <div class="item-row">
-                        <div>${item.item_name} (x${item.quantity})</div>
-                        <div>₦${item.grand_total.toFixed(2)}</div>
+                        <div>${item.name} (x${item.quantity})</div>
+                        <div>₦${item.subtotal.toFixed(2)}</div>
                     </div>
                 `;
             });
