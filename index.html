@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Cashier POS Terminal</title>
+    <!-- HTML5 QR Code / Barcode Library for Camera Scanning -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
             --bg-color: #f1f5f9;
@@ -80,6 +82,17 @@
 
         .hidden-form { display: none; }
 
+        /* Camera Scanner Modal Styles */
+        #cameraScannerContainer {
+            display: none;
+            background: #f8fafc;
+            border: 1px dashed var(--primary);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
         /* Printable Receipt Thermal Design */
         #receiptContainer { display: none; }
 
@@ -148,11 +161,21 @@
 
             <!-- Item Entry Form -->
             <div class="card">
-                <h2>Scan / Add Item</h2>
+                <div class="card-header">
+                    <h2>Scan / Add Item</h2>
+                    <button type="button" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;" onclick="toggleCameraScanner()">📷 Camera</button>
+                </div>
+
+                <!-- Camera Reader Container -->
+                <div id="cameraScannerContainer">
+                    <div id="interactive-reader" style="width: 100%; max-width: 320px; margin: 0 auto;"></div>
+                    <button type="button" class="btn btn-danger" style="margin-top: 8px; width: 100%; padding: 0.3rem;" onclick="toggleCameraScanner()">Close Camera</button>
+                </div>
+
                 <form id="cashierForm" style="margin-top: 0.75rem;">
                     <div class="form-group">
                         <label for="itemName">Item Name / Barcode</label>
-                        <input type="text" id="itemName" placeholder="Scan or enter name" autofocus required>
+                        <input type="text" id="itemName" placeholder="Scan hardware barcode or type..." autofocus autocomplete="off" required>
                     </div>
 
                     <div class="form-group">
@@ -255,6 +278,14 @@
             salesPerson: "Admin"
         };
 
+        // Demo Barcode Database Map
+        const mockProductCatalog = {
+            "6151100001234": { name: "Peak Milk Powder 400g", price: 3200.00, category: "Groceries", product_id: 101 },
+            "8901030005678": { name: "Indomie Super Pack 120g", price: 450.00, category: "Groceries", product_id: 102 },
+            "6001050009999": { name: "Coca Cola 50ml PET", price: 350.00, category: "Groceries", product_id: 103 },
+            "012345678905": { name: "USB Type-C Fast Cable", price: 2500.00, category: "Electronics", product_id: 104 }
+        };
+
         function toggleStoreSettings() {
             const form = document.getElementById('storeSettingsForm');
             const btn = document.getElementById('toggleSettingsBtn');
@@ -273,26 +304,47 @@
             alert("Settings updated!");
         });
 
-        // Add Transaction & Auto-Focus scanner field
-        async function addTransaction(e) {
-            e.preventDefault();
-            const qty = parseFloat(document.getElementById('quantity').value);
-            const price = parseFloat(document.getElementById('price').value);
-            const total = qty * price;
+        // Barcode Hardware Gun Event Handling
+        const itemNameInput = document.getElementById('itemName');
 
-           // Locate where you construct the order record in addTransaction:
+        itemNameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const code = this.value.trim();
+                if (!code) return;
+
+                if (mockProductCatalog[code]) {
+                    const p = mockProductCatalog[code];
+                    document.getElementById('itemName').value = p.name;
+                    document.getElementById('price').value = p.price;
+                    document.getElementById('category').value = p.category;
+                    
+                    // Trigger record save immediately for scanned item
+                    saveTransactionRecord(p.name, p.category, 1, p.price, p.product_id);
+                    this.value = '';
+                } else {
+                    // Manual item entry fallback if code isn't in catalog
+                    if (document.getElementById('price').value) {
+                        document.getElementById('cashierForm').requestSubmit();
+                    }
+                }
+            }
+        });
+
+        async function saveTransactionRecord(name, category, qty, price, productId = 1) {
+            const total = qty * price;
             const record = {
                 client_uuid: crypto.randomUUID(),
                 receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
-                item_name: document.getElementById('itemName').value,
-                category: document.getElementById('category').value,
+                item_name: name,
+                category: category,
                 quantity: qty,
                 price: price,
                 subtotal: total,
                 grand_total: total,
                 created_at: new Date().toISOString(),
-                synced: 0, // <-- CHANGE THIS FROM false TO 0
-                items: [{ product_id: 1, quantity: qty, unit_price: price, subtotal: total }]
+                synced: 0,
+                items: [{ product_id: productId, quantity: qty, unit_price: price, subtotal: total }]
             };
 
             const db = await openIndexedDB();
@@ -301,13 +353,60 @@
 
             document.getElementById('cashierForm').reset();
             document.getElementById('quantity').value = "1";
-            document.getElementById('itemName').focus(); // Auto-focus for continuous scanner usage
+            itemNameInput.focus();
 
             renderTable();
             syncOfflineOrders();
         }
 
+        async function addTransaction(e) {
+            e.preventDefault();
+            const qty = parseFloat(document.getElementById('quantity').value);
+            const price = parseFloat(document.getElementById('price').value);
+            const name = document.getElementById('itemName').value;
+            const category = document.getElementById('category').value;
+
+            await saveTransactionRecord(name, category, qty, price, 1);
+        }
+
         document.getElementById('cashierForm').addEventListener('submit', addTransaction);
+
+        // Camera Scanner Integration
+        let html5QrCode = null;
+
+        function toggleCameraScanner() {
+            const container = document.getElementById('cameraScannerContainer');
+            if (container.style.display === 'none' || container.style.display === '') {
+                container.style.display = 'block';
+                html5QrCode = new Html5Qrcode("interactive-reader");
+                
+                const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    config,
+                    (decodedText) => {
+                        if (mockProductCatalog[decodedText]) {
+                            const p = mockProductCatalog[decodedText];
+                            saveTransactionRecord(p.name, p.category, 1, p.price, p.product_id);
+                        } else {
+                            itemNameInput.value = decodedText;
+                        }
+                        toggleCameraScanner();
+                    },
+                    (errorMessage) => {}
+                ).catch(err => console.error("Camera permissions error:", err));
+            } else {
+                if (html5QrCode) {
+                    html5QrCode.stop().then(() => {
+                        container.style.display = 'none';
+                    }).catch(() => {
+                        container.style.display = 'none';
+                    });
+                } else {
+                    container.style.display = 'none';
+                }
+            }
+        }
 
         async function getLocalOrders() {
             const db = await openIndexedDB();
@@ -437,7 +536,6 @@
             }
         }
 
-        // F2 Keyboard Shortcut for Fast Printing
         window.addEventListener('keydown', (e) => {
             if (e.key === 'F2') {
                 e.preventDefault();
