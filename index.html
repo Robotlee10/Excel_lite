@@ -475,30 +475,62 @@
             });
         }
 
-        async function renderTable() {
-            const transactions = await getLocalOrders();
-            const tbody = document.getElementById('dataTableBody');
-            tbody.innerHTML = '';
+       async function renderTable() {
+    const transactions = await getLocalOrders();
+    const tbody = document.getElementById('dataTableBody');
+    tbody.innerHTML = '';
 
-            let unsyncedCount = 0;
+    let unsyncedCount = 0;
 
-            transactions.forEach(item => {
-                if (!item.synced) unsyncedCount++;
-                const row = `<tr>
-                    <td style="text-align: center;"><input type="checkbox" class="item-checkbox" value="${item.client_uuid}"></td>
-                    <td style="text-align: center;"><span class="sync-dot ${item.synced === 1 ? 'synced-true' : 'synced-false'}"></span></td>
-                    <td>${item.receipt_number}</td>
-                    <td>${item.item_name}</td>
-                    <td>${item.quantity}</td>
-                    <td>₦${item.price.toFixed(2)}</td>
-                    <td><strong>₦${item.grand_total.toFixed(2)}</strong></td>
-                </tr>`;
-                tbody.innerHTML += row;
-            });
+    // Grouping map to merge identical items for display
+    const consolidatedDisplayMap = {};
 
-            document.getElementById('pendingCount').innerText = `${unsyncedCount} Unsynced`;
+    transactions.forEach(item => {
+        if (!item.synced) unsyncedCount++;
+
+        // Key based on item name and price (case-insensitive)
+        const key = item.item_name.toLowerCase() + "_" + item.price;
+
+        if (consolidatedDisplayMap[key]) {
+            consolidatedDisplayMap[key].quantity += item.quantity;
+            consolidatedDisplayMap[key].grand_total += item.grand_total;
+            // Retain un-synced dot status if ANY row of this item is un-synced
+            if (item.synced === 0) consolidatedDisplayMap[key].synced = 0;
+            // Append UUIDs so checkboxes still work for selected items
+            consolidatedDisplayMap[key].uuids.push(item.client_uuid);
+        } else {
+            consolidatedDisplayMap[key] = {
+                receipt_number: item.receipt_number,
+                item_name: item.item_name,
+                quantity: item.quantity,
+                price: item.price,
+                grand_total: item.grand_total,
+                synced: item.synced,
+                uuids: [item.client_uuid]
+            };
         }
+    });
 
+    // Render consolidated rows to the table
+    Object.values(consolidatedDisplayMap).forEach(item => {
+        const primaryUuid = item.uuids[0]; // Primary UUID for checkbox selection
+        const row = `<tr>
+            <td style="text-align: center;">
+                <input type="checkbox" class="item-checkbox" value="${item.uuids.join(',')}">
+            </td>
+            <td style="text-align: center;">
+                <span class="sync-dot ${item.synced === 1 ? 'synced-true' : 'synced-false'}"></span>
+            </td>
+            <td>${item.receipt_number}</td>
+            <td>${item.item_name}</td>
+            <td><strong>x${item.quantity}</strong></td>
+            <td>₦${item.price.toFixed(2)}</td>
+            <td><strong>₦${item.grand_total.toFixed(2)}</strong></td>
+        </tr>`;
+        tbody.innerHTML += row;
+    });
+    document.getElementById('pendingCount').innerText = `${unsyncedCount} Unsynced`;
+}
         async function syncOfflineOrders() {
             if (!navigator.onLine) {
                 document.getElementById('networkStatus').className = 'status-badge status-offline';
@@ -553,14 +585,19 @@
         }
 
         async function printReceipt() {
-            const selected = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.value);
-            const transactions = await getLocalOrders();
-            const itemsToPrint = transactions.filter(t => selected.includes(t.client_uuid));
+    // Flatten selected UUIDs from consolidated rows
+    const selected = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+        .flatMap(cb => cb.value.split(','));
+        
+    const transactions = await getLocalOrders();
+    const itemsToPrint = transactions.filter(t => selected.includes(t.client_uuid));
 
-            if (itemsToPrint.length === 0) {
-                alert("Select items using checkboxes to print receipt.");
-                return;
-            }
+    if (itemsToPrint.length === 0) {
+        alert("Select items using checkboxes to print receipt.");
+        return;
+    }
+
+    // ... rest of your printReceipt() function remains unchanged ...
 
             document.getElementById('receiptStoreName').innerText = storeSettings.storeName;
             document.getElementById('receiptStoreAddress').innerText = storeSettings.storeAddress;
