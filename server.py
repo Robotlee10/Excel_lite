@@ -58,6 +58,47 @@ class SyncOrderSchema(BaseModel):
     created_at: str
     items: List[OrderItemSchema]
 
+class VoidItemSchema(BaseModel):
+    model_config = ConfigDict(extra='ignore')
+    client_uuid: str
+    receipt_number: str
+    item_name: str
+    category: Optional[str] = "General"
+    quantity: Union[float, int]
+    price: float
+    grand_total: float
+    cashier_name: Optional[str] = "Admin"
+    receipt_printed: Optional[bool] = False
+    voided_at: str
+
+@app.post("/api/v1/sync/voids")
+def sync_voids(voids: List[VoidItemSchema], db_conn=Depends(get_db)):
+    synced_uuids = []
+    
+    with db_conn.cursor() as cursor:
+        for v in voids:
+            try:
+                cursor.execute("""
+                    INSERT INTO transaction_voids (
+                        client_uuid, receipt_number, item_name, category,
+                        quantity, price, grand_total, cashier_name,
+                        receipt_printed, voided_at
+                    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT DO NOTHING;
+                """, (
+                    v.client_uuid, v.receipt_number, v.item_name, v.category,
+                    v.quantity, v.price, v.grand_total, v.cashier_name,
+                    v.receipt_printed or False, v.voided_at
+                ))
+                synced_uuids.append(v.client_uuid)
+            except Exception as e:
+                db_conn.rollback()
+                raise HTTPException(status_code=500, detail=f"Failed to log void {v.client_uuid}: {str(e)}")
+
+        db_conn.commit()
+
+    return {"status": "success", "synced_void_uuids": synced_uuids}
+
 @app.get("/")
 def read_root():
     return {"status": "online", "message": "POS Sync Backend Engine Active"}

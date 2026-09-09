@@ -253,16 +253,17 @@
             <div class="table-container">
                 <table>
                     <thead>
-                        <tr>
-                            <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
-                            <th style="width: 20px;"></th>
-                            <th>Receipt #</th>
-                            <th>Item Name</th>
-                            <th>Qty</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
+    <tr>
+        <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+        <th style="width: 20px;"></th>
+        <th>Receipt #</th>
+        <th>Item Name</th>
+        <th>Qty</th>
+        <th>Price</th>
+        <th>Total</th>
+        <th style="text-align: center;">Action</th>
+    </tr>
+</thead>
                     <tbody id="dataTableBody"></tbody>
                 </table>
             </div>
@@ -509,7 +510,7 @@
             });
         }
 
-       async function renderTable() {
+async function renderTable() {
     const transactions = await getLocalOrders();
     const tbody = document.getElementById('dataTableBody');
     tbody.innerHTML = '';
@@ -530,7 +531,7 @@
             consolidatedDisplayMap[key].grand_total += item.grand_total;
             // Retain un-synced dot status if ANY row of this item is un-synced
             if (item.synced === 0) consolidatedDisplayMap[key].synced = 0;
-            // Append UUIDs so checkboxes still work for selected items
+            // Append UUIDs so checkboxes and void buttons target all underlying entries
             consolidatedDisplayMap[key].uuids.push(item.client_uuid);
         } else {
             consolidatedDisplayMap[key] = {
@@ -545,12 +546,12 @@
         }
     });
 
-    // Render consolidated rows to the table
+    // Render consolidated rows with Void action button
     Object.values(consolidatedDisplayMap).forEach(item => {
-        const primaryUuid = item.uuids[0]; // Primary UUID for checkbox selection
+        const uuidListStr = item.uuids.join(',');
         const row = `<tr>
             <td style="text-align: center;">
-                <input type="checkbox" class="item-checkbox" value="${item.uuids.join(',')}">
+                <input type="checkbox" class="item-checkbox" value="${uuidListStr}">
             </td>
             <td style="text-align: center;">
                 <span class="sync-dot ${item.synced === 1 ? 'synced-true' : 'synced-false'}"></span>
@@ -560,12 +561,24 @@
             <td><strong>x${item.quantity}</strong></td>
             <td>₦${item.price.toFixed(2)}</td>
             <td><strong>₦${item.grand_total.toFixed(2)}</strong></td>
+            <td style="text-align: center;">
+                <button type="button" class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;" onclick="voidConsolidatedItems('${uuidListStr}')">Void</button>
+            </td>
         </tr>`;
         tbody.innerHTML += row;
     });
+
     document.getElementById('pendingCount').innerText = `${unsyncedCount} Unsynced`;
 }
-        async function syncOfflineOrders() {
+
+// Handler to void all UUIDs tied to a consolidated row
+async function voidConsolidatedItems(uuidString) {
+    const uuids = uuidString.split(',');
+    for (const uuid of uuids) {
+        await voidTransactionItem(uuid);
+    }
+}
+async function syncOfflineOrders() {
             if (!navigator.onLine) {
                 document.getElementById('networkStatus').className = 'status-badge status-offline';
                 document.getElementById('networkStatus').innerText = '● Offline Mode';
@@ -673,16 +686,114 @@
             document.getElementById('receiptGrandTotal').innerText = `₦${grandTotal.toFixed(2)}`;
             window.print();
         }
+// Track whether receipt was printed for active buffer items
+let activeReceiptPrinted = false;
 
-        async function clearLocalBuffer() {
-            if (confirm("Clear all locally stored transactions?")) {
-                const db = await openIndexedDB();
-                const tx = db.transaction("orders", "readwrite");
-                tx.objectStore("orders").clear();
-                renderTable();
+// Override printReceipt to mark items as printed before firing dialog
+const originalPrintReceipt = printReceipt;
+printReceipt = async function() {
+    activeReceiptPrinted = true;
+    await originalPrintReceipt();
+};
+
+async function voidTransactionItem(clientUuid) {
+    const db = await openIndexedDB();
+    const tx = db.transaction("orders", "readwrite");
+    const store = tx.objectStore("orders");
+
+    const item = await new Promise((res) => {
+        const req = store.get(clientUuid);
+        req.onsuccess = () => res(req.result);
+    });
+
+    if (!item) return;
+
+    const confirmMsg = item.synced === 1 
+        ? `Item "${item.item_name}" is already synced. Voiding will record a manager audit log. Proceed?` 
+        : `Void "${item.item_name}" from transaction list?`;
+
+    if (confirm(confirmMsg)) {
+        // Construct Void Audit Record
+        const voidRecord = {
+            client_uuid: item.client_uuid,
+            receipt_number: item.receipt_number,
+            item_name: item.item_name,
+            category: item.category || 'General',
+            quantity: item.quantity,
+            price: item.price,
+            grand_total: item.grand_total,
+            cashier_name: storeSettings.salesPerson || 'Admin',
+            receipt_printed: activeReceiptPrinted,
+            voided_at: new Date().toISOString(),
+            synced: 0
+        };
+
+        // Save to Local Void Queue (for offline sync)
+        localStorage.setItem('pending_voids', JSON.stringify([
+            ...JSON.parse(localStorage.getItem('pending_voids') || '[]'),
+            voidRecord
+        ]));
+
+        // Remove from active cart/order buffer
+        await store.delete(clientUuid);
+
+        renderTable();
+        syncVoidAuditLogs();
+    }
+}
+
+// Background sync for void audit records
+async function syncVoidAuditLogs() {
+    if (!navigator.onLine) return;
+
+    const pendingVoids = JSON.parse(localStorage.getItem('pending_voids')) || [];
+    if (pendingVoids.length === 0) return;
+
+    try {
+        const res = await fetch("https://excel-lite.onrender.com/api/v1/sync/voids", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pendingVoids)
+        });
+
+        if (res.ok) {
+            const result = await res.json();
+            if (result.synced_void_uuids) {
+                const remaining = pendingVoids.filter(v => !result.synced_void_uuids.includes(v.client_uuid));
+                localStorage.setItem('pending_voids', JSON.stringify(remaining));
+                console.log("Void audit log successfully synced to Supabase!");
             }
         }
+    } catch (err) {
+        console.log("Backend offline; void audit logs queued locally.");
+    }
+}
+        async function clearLocalBuffer() {
+    const db = await openIndexedDB();
+    const tx = db.transaction("orders", "readwrite");
+    const store = tx.objectStore("orders");
+    const index = store.index("synced");
 
+    // Fetch all synced orders (synced === 1)
+    const syncedOrders = await new Promise((res) => {
+        const req = index.getAll(1);
+        req.onsuccess = () => res(req.result || []);
+    });
+
+    if (syncedOrders.length === 0) {
+        alert("No synced transactions to clear. Unsynced orders have been preserved!");
+        return;
+    }
+
+    if (confirm(`Clear ${syncedOrders.length} synced transactions from local view? (Unsynced orders will NOT be deleted)`)) {
+        syncedOrders.forEach(order => {
+            store.delete(order.client_uuid);
+        });
+        
+        await new Promise((res) => tx.oncomplete = res);
+        renderTable();
+    }
+}
         window.addEventListener('keydown', (e) => {
             if (e.key === 'F2') {
                 e.preventDefault();
@@ -695,11 +806,16 @@
 
         // Single Unified App Initialization
         window.onload = async () => {
-            renderTable();
-            await refreshProductCatalog();
-            syncOfflineOrders();
-            setInterval(syncOfflineOrders, 20000);
-        };
+    loadStoreSettingsUI();
+    renderTable();
+    await refreshProductCatalog();
+    syncOfflineOrders();
+    syncVoidAuditLogs();
+    setInterval(() => {
+        syncOfflineOrders();
+        syncVoidAuditLogs();
+    }, 20000);
+};
     </script>
 </body>
 </html>
