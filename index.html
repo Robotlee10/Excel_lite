@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enterprise Cashier POS Terminal</title>
-    <!-- HTML5 QR Code / Barcode Library for Camera Scanning -->
+    <!-- Load the QR and barcode scanner used by the camera input. -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
@@ -82,7 +82,7 @@
 
         .hidden-form { display: none; }
 
-        /* Camera Scanner Modal Styles */
+        /* Keep the camera scanner panel hidden until it is opened. */
         #cameraScannerContainer {
             display: none;
             background: #f8fafc;
@@ -93,7 +93,7 @@
             text-align: center;
         }
 
-        /* Printable Receipt Thermal Design */
+        /* Format the receipt for a compact thermal printer. */
         #receiptContainer { display: none; }
 
         .receipt-card {
@@ -167,7 +167,7 @@
     
     <div class="container">
         <div class="sidebar">
-            <!-- Terminal Config -->
+            <!-- Store and cashier settings. -->
             <div class="card">
                 <div class="card-header">
                     <h2>Store Configuration</h2>
@@ -191,14 +191,14 @@
                 </form>
             </div>
 
-            <!-- Item Entry Form -->
+            <!-- Product entry and camera scanning controls. -->
             <div class="card">
                 <div class="card-header">
                     <h2>Scan / Add Item</h2>
                     <button type="button" class="btn btn-secondary" style="font-size: 0.75rem; padding: 0.3rem 0.6rem;" onclick="toggleCameraScanner()">📷 Camera</button>
                 </div>
 
-                <!-- Camera Reader Container -->
+                <!-- Camera scanner output and close control. -->
                 <div id="cameraScannerContainer">
                     <div id="interactive-reader" style="width: 100%; max-width: 320px; margin: 0 auto;"></div>
                     <button type="button" class="btn btn-danger" style="margin-top: 8px; width: 100%; padding: 0.3rem;" onclick="toggleCameraScanner()">Close Camera</button>
@@ -236,7 +236,7 @@
             </div>
         </div>
 
-        <!-- Sales Log -->
+        <!-- Transaction history and export actions. -->
         <div class="card">
             <div class="card-header">
                 <h2>Transaction History</h2>
@@ -267,7 +267,7 @@
         </div>
     </div>
 
-    <!-- Thermal Print Layout -->
+    <!-- Receipt markup used by the print stylesheet. -->
     <div id="receiptContainer">
         <div class="receipt-card">
             <div class="store-header">
@@ -289,7 +289,7 @@
     </div>
 
     <script>
-        // IndexedDB Initialization
+        // Open the local database and create its order store on first use.
         function openIndexedDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open("POSLocalDB", 1);
@@ -324,6 +324,7 @@
             if (!navigator.onLine) return;
 
             try {
+                // Refresh the catalog when online; the cached copy remains available offline.
                 const res = await fetch("https://excel-lite.onrender.com/api/v1/products?t=" + Date.now(), {
                     cache: 'no-store'
                 });
@@ -391,6 +392,7 @@
             const store = tx.objectStore("orders");
             const index = store.index("synced");
 
+            // Keep matching unsynced items together so the cart stays compact before upload.
             const unsyncedOrders = await new Promise((res, rej) => {
                 const req = index.getAll(0);
                 req.onsuccess = () => res(req.result || []);
@@ -507,6 +509,7 @@
             let unsyncedCount = 0;
             const consolidatedDisplayMap = {};
 
+            // Group identical items for display while retaining every source UUID for actions.
             transactions.forEach(item => {
                 if (!item.synced) unsyncedCount++;
 
@@ -654,6 +657,7 @@
 
                 const result = await response.json();
                 if (response.ok && result.synced_uuids) {
+                    // Only mark records synced after the server confirms their UUIDs.
                     const writeTx = db.transaction("orders", "readwrite");
                     const store = writeTx.objectStore("orders");
                     for (const uuid of result.synced_uuids) {
@@ -699,6 +703,7 @@
             const consolidatedMap = {};
             let grandTotal = 0;
 
+            // Combine selected rows for a readable receipt without changing stored transactions.
             itemsToPrint.forEach(item => {
                 const key = item.item_name.toLowerCase() + "_" + item.price;
                 if (consolidatedMap[key]) {
@@ -755,7 +760,7 @@
             syncVoidAuditLogs();
         });
 
-      // 1. Add the missing UI setting loader function
+// Populate the settings form from the saved store configuration.
 function loadStoreSettingsUI() {
     const nameInput = document.getElementById('storeName');
     const addrInput = document.getElementById('storeAddress');
@@ -766,11 +771,11 @@ function loadStoreSettingsUI() {
     if (salesInput) salesInput.value = storeSettings.salesPerson || '';
 }
 
-// 2. Main App Load Handler
+// Initialize the interface, catalog, and background synchronization.
 window.onload = async () => {
-    loadStoreSettingsUI(); // Now defined properly
+    loadStoreSettingsUI();
     renderTable();
-    await refreshProductCatalog(); // Will now execute successfully!
+    await refreshProductCatalog();
     syncOfflineOrders();
     syncVoidAuditLogs();
     setInterval(() => {
