@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SyncCart</title>
-    <link class="js-meta-favicon" rel="icon" type="image/png" href="/favicon.png">
+    <title>Enterprise Cashier POS Terminal</title>
     <!-- HTML5 QR Code / Barcode Library for Camera Scanning -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
@@ -113,54 +112,52 @@
         .divider { border-bottom: 1px dashed #000; margin: 8px 0; }
         .item-row { display: flex; justify-content: space-between; margin-bottom: 4px; }
 
-       @media print {
-    /* 1. Force exact thermal paper width and zero margins */
-    @page {
-        size: 80mm auto; /* Change to 58mm if using a smaller thermal printer */
-        margin: 0 !important;
-    }
+        @media print {
+            @page {
+                size: 80mm auto;
+                margin: 0 !important;
+            }
 
-    html, body {
-        height: auto !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden !important;
-    }
+            html, body {
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+            }
 
-    body * { visibility: hidden; }
+            body * { visibility: hidden; }
 
-    #receiptContainer, #receiptContainer * { 
-        visibility: visible; 
-    }
+            #receiptContainer, #receiptContainer * { 
+                visibility: visible; 
+            }
 
-    #receiptContainer {
-        display: flex !important;
-        justify-content: center;
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100% !important;
-        background: white;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
+            #receiptContainer {
+                display: flex !important;
+                justify-content: center;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100% !important;
+                background: white;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
 
-    /* 2. Prevent page break rules inside receipt card */
-    .receipt-card {
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-        margin: 0 auto !important;
-        padding: 5px !important; /* Reduced padding prevents extra feed */
-    }
-}
+            .receipt-card {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+                margin: 0 auto !important;
+                padding: 5px !important;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="top-bar">
         <div>
-            <h1>SyncCart</h1>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Welcome <kbd></kbd></p>
+            <h1>Cashier POS Terminal</h1>
+            <p style="color: var(--text-muted); font-size: 0.85rem;">Press <kbd>F2</kbd> anywhere to print selected items receipt</p>
         </div>
         <div class="status-container">
             <span id="networkStatus" class="status-badge status-online">● Online</span>
@@ -180,15 +177,15 @@
                 <form id="storeSettingsForm" class="hidden-form">
                     <div class="form-group">
                         <label for="storeName">Store Name</label>
-                        <input type="text" id="storeName" value="Robotlee Store" required>
+                        <input type="text" id="storeName" value="Central Mart Terminal" required>
                     </div>
                     <div class="form-group">
                         <label for="storeAddress">Address</label>
-                        <input type="text" id="storeAddress" value="Molete, Ibadan" required>
+                        <input type="text" id="storeAddress" value="Plot 12 Commercial Way, Lagos" required>
                     </div>
                     <div class="form-group">
                         <label for="salesPerson">Cashier Name</label>
-                        <input type="text" id="salesPerson" value="Ahmad" required>
+                        <input type="text" id="salesPerson" value="Admin" required>
                     </div>
                     <button type="submit" class="btn btn-secondary" style="width: 100%;">Save Config</button>
                 </form>
@@ -253,17 +250,17 @@
             <div class="table-container">
                 <table>
                     <thead>
-    <tr>
-        <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
-        <th style="width: 20px;"></th>
-        <th>Receipt #</th>
-        <th>Item Name</th>
-        <th>Qty</th>
-        <th>Price</th>
-        <th>Total</th>
-        <th style="text-align: center;">Action</th>
-    </tr>
-</thead>
+                        <tr>
+                            <th style="width: 30px; text-align: center;"><input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)"></th>
+                            <th style="width: 20px;"></th>
+                            <th>Receipt #</th>
+                            <th>Item Name</th>
+                            <th>Qty</th>
+                            <th>Price</th>
+                            <th>Total</th>
+                            <th style="text-align: center;">Action</th>
+                        </tr>
+                    </thead>
                     <tbody id="dataTableBody"></tbody>
                 </table>
             </div>
@@ -309,15 +306,20 @@
         }
 
         let storeSettings = JSON.parse(localStorage.getItem('cashier_store_settings')) || {
-            storeName: "Robotlee Store",
-            storeAddress: "Molete Ibadan",
-            salesPerson: "Ahmad"
+            storeName: "Central Mart Terminal",
+            storeAddress: "Plot 12 Commercial Way, Lagos",
+            salesPerson: "Admin"
         };
     
-        // Initialize product catalog from local storage
         let mockProductCatalog = JSON.parse(localStorage.getItem('cached_products')) || {};
+        let activeReceiptPrinted = false;
 
-        // Fetch products dynamically from Supabase
+        function loadStoreSettingsUI() {
+            document.getElementById('storeName').value = storeSettings.storeName;
+            document.getElementById('storeAddress').value = storeSettings.storeAddress;
+            document.getElementById('salesPerson').value = storeSettings.salesPerson;
+        }
+
         async function refreshProductCatalog() {
             if (!navigator.onLine) return;
 
@@ -337,7 +339,6 @@
             }
         }
 
-        // Single Barcode Input Definition
         const itemNameInput = document.getElementById('itemName');
 
         itemNameInput.addEventListener('keydown', async function(e) {
@@ -384,73 +385,62 @@
             alert("Settings updated!");
         });
 
-       async function saveTransactionRecord(name, category, qty, price, productId = 1) {
-    const db = await openIndexedDB();
-    
-    // Open a SINGLE readwrite transaction for both searching and updating
-    const tx = db.transaction("orders", "readwrite");
-    const store = tx.objectStore("orders");
-    const index = store.index("synced");
+        async function saveTransactionRecord(name, category, qty, price, productId = 1) {
+            const db = await openIndexedDB();
+            const tx = db.transaction("orders", "readwrite");
+            const store = tx.objectStore("orders");
+            const index = store.index("synced");
 
-    // Fetch all unsynced items within the active transaction
-    const unsyncedOrders = await new Promise((res, rej) => {
-        const req = index.getAll(0);
-        req.onsuccess = () => res(req.result || []);
-        req.onerror = () => rej(req.error);
-    });
+            const unsyncedOrders = await new Promise((res, rej) => {
+                const req = index.getAll(0);
+                req.onsuccess = () => res(req.result || []);
+                req.onerror = () => rej(req.error);
+            });
 
-    // Match by item name (case-insensitive) and price
-    const existingItem = unsyncedOrders.find(
-        order => order.item_name.toLowerCase() === name.toLowerCase() && order.price === price
-    );
+            const existingItem = unsyncedOrders.find(
+                order => order.item_name.toLowerCase() === name.toLowerCase() && order.price === price
+            );
 
-    if (existingItem) {
-        // Increment quantity and update totals
-        existingItem.quantity += qty;
-        const newTotal = existingItem.quantity * price;
-        existingItem.subtotal = newTotal;
-        existingItem.grand_total = newTotal;
-        
-        if (existingItem.items && existingItem.items[0]) {
-            existingItem.items[0].quantity = existingItem.quantity;
-            existingItem.items[0].subtotal = newTotal;
+            if (existingItem) {
+                existingItem.quantity += qty;
+                const newTotal = existingItem.quantity * price;
+                existingItem.subtotal = newTotal;
+                existingItem.grand_total = newTotal;
+                if (existingItem.items && existingItem.items[0]) {
+                    existingItem.items[0].quantity = existingItem.quantity;
+                    existingItem.items[0].subtotal = newTotal;
+                }
+                store.put(existingItem);
+            } else {
+                const total = qty * price;
+                const record = {
+                    client_uuid: crypto.randomUUID(),
+                    receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
+                    item_name: name,
+                    category: category,
+                    quantity: qty,
+                    price: price,
+                    subtotal: total,
+                    grand_total: total,
+                    created_at: new Date().toISOString(),
+                    synced: 0,
+                    items: [{ product_id: productId, quantity: qty, unit_price: price, subtotal: total }]
+                };
+                store.add(record);
+            }
+
+            await new Promise((res, rej) => {
+                tx.oncomplete = () => res();
+                tx.onerror = () => rej(tx.error);
+            });
+
+            document.getElementById('cashierForm').reset();
+            document.getElementById('quantity').value = "1";
+            itemNameInput.focus();
+
+            renderTable();
+            syncOfflineOrders();
         }
-
-        store.put(existingItem);
-    } else {
-        // Insert new line item
-        const total = qty * price;
-        const record = {
-            client_uuid: crypto.randomUUID(),
-            receipt_number: "POS-" + Math.floor(100000 + Math.random() * 900000),
-            item_name: name,
-            category: category,
-            quantity: qty,
-            price: price,
-            subtotal: total,
-            grand_total: total,
-            created_at: new Date().toISOString(),
-            synced: 0,
-            items: [{ product_id: productId, quantity: qty, unit_price: price, subtotal: total }]
-        };
-
-        store.add(record);
-    }
-
-    // Wait for the single transaction to complete
-    await new Promise((resolve, reject) => {
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-    });
-
-    // Reset input fields
-    document.getElementById('cashierForm').reset();
-    document.getElementById('quantity').value = "1";
-    itemNameInput.focus();
-
-    renderTable();
-    syncOfflineOrders();
-}
 
         async function addTransaction(e) {
             e.preventDefault();
@@ -464,7 +454,6 @@
 
         document.getElementById('cashierForm').addEventListener('submit', addTransaction);
 
-        // Camera Scanner Integration
         let html5QrCode = null;
 
         function toggleCameraScanner() {
@@ -510,75 +499,132 @@
             });
         }
 
-async function renderTable() {
-    const transactions = await getLocalOrders();
-    const tbody = document.getElementById('dataTableBody');
-    tbody.innerHTML = '';
+        async function renderTable() {
+            const transactions = await getLocalOrders();
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
 
-    let unsyncedCount = 0;
+            let unsyncedCount = 0;
+            const consolidatedDisplayMap = {};
 
-    // Grouping map to merge identical items for display
-    const consolidatedDisplayMap = {};
+            transactions.forEach(item => {
+                if (!item.synced) unsyncedCount++;
 
-    transactions.forEach(item => {
-        if (!item.synced) unsyncedCount++;
+                const key = item.item_name.toLowerCase() + "_" + item.price;
 
-        // Key based on item name and price (case-insensitive)
-        const key = item.item_name.toLowerCase() + "_" + item.price;
+                if (consolidatedDisplayMap[key]) {
+                    consolidatedDisplayMap[key].quantity += item.quantity;
+                    consolidatedDisplayMap[key].grand_total += item.grand_total;
+                    if (item.synced === 0) consolidatedDisplayMap[key].synced = 0;
+                    consolidatedDisplayMap[key].uuids.push(item.client_uuid);
+                } else {
+                    consolidatedDisplayMap[key] = {
+                        receipt_number: item.receipt_number,
+                        item_name: item.item_name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        grand_total: item.grand_total,
+                        synced: item.synced,
+                        uuids: [item.client_uuid]
+                    };
+                }
+            });
 
-        if (consolidatedDisplayMap[key]) {
-            consolidatedDisplayMap[key].quantity += item.quantity;
-            consolidatedDisplayMap[key].grand_total += item.grand_total;
-            // Retain un-synced dot status if ANY row of this item is un-synced
-            if (item.synced === 0) consolidatedDisplayMap[key].synced = 0;
-            // Append UUIDs so checkboxes and void buttons target all underlying entries
-            consolidatedDisplayMap[key].uuids.push(item.client_uuid);
-        } else {
-            consolidatedDisplayMap[key] = {
+            Object.values(consolidatedDisplayMap).forEach(item => {
+                const uuidListStr = item.uuids.join(',');
+                const row = `<tr>
+                    <td style="text-align: center;">
+                        <input type="checkbox" class="item-checkbox" value="${uuidListStr}">
+                    </td>
+                    <td style="text-align: center;">
+                        <span class="sync-dot ${item.synced === 1 ? 'synced-true' : 'synced-false'}"></span>
+                    </td>
+                    <td>${item.receipt_number}</td>
+                    <td>${item.item_name}</td>
+                    <td><strong>x${item.quantity}</strong></td>
+                    <td>₦${item.price.toFixed(2)}</td>
+                    <td><strong>₦${item.grand_total.toFixed(2)}</strong></td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;" onclick="voidConsolidatedItems('${uuidListStr}')">Void</button>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+
+            document.getElementById('pendingCount').innerText = `${unsyncedCount} Unsynced`;
+        }
+
+        async function voidConsolidatedItems(uuidString) {
+            const uuids = uuidString.split(',');
+            for (const uuid of uuids) {
+                await voidTransactionItem(uuid);
+            }
+        }
+
+        async function voidTransactionItem(clientUuid) {
+            const db = await openIndexedDB();
+            const tx = db.transaction("orders", "readwrite");
+            const store = tx.objectStore("orders");
+
+            const item = await new Promise((res) => {
+                const req = store.get(clientUuid);
+                req.onsuccess = () => res(req.result);
+            });
+
+            if (!item) return;
+
+            const voidRecord = {
+                client_uuid: item.client_uuid,
                 receipt_number: item.receipt_number,
                 item_name: item.item_name,
+                category: item.category || 'General',
                 quantity: item.quantity,
                 price: item.price,
                 grand_total: item.grand_total,
-                synced: item.synced,
-                uuids: [item.client_uuid]
+                cashier_name: storeSettings.salesPerson || 'Admin',
+                receipt_printed: activeReceiptPrinted,
+                voided_at: new Date().toISOString(),
+                synced: 0
             };
+
+            localStorage.setItem('pending_voids', JSON.stringify([
+                ...JSON.parse(localStorage.getItem('pending_voids') || '[]'),
+                voidRecord
+            ]));
+
+            await store.delete(clientUuid);
+
+            renderTable();
+            syncVoidAuditLogs();
         }
-    });
 
-    // Render consolidated rows with Void action button
-    Object.values(consolidatedDisplayMap).forEach(item => {
-        const uuidListStr = item.uuids.join(',');
-        const row = `<tr>
-            <td style="text-align: center;">
-                <input type="checkbox" class="item-checkbox" value="${uuidListStr}">
-            </td>
-            <td style="text-align: center;">
-                <span class="sync-dot ${item.synced === 1 ? 'synced-true' : 'synced-false'}"></span>
-            </td>
-            <td>${item.receipt_number}</td>
-            <td>${item.item_name}</td>
-            <td><strong>x${item.quantity}</strong></td>
-            <td>₦${item.price.toFixed(2)}</td>
-            <td><strong>₦${item.grand_total.toFixed(2)}</strong></td>
-            <td style="text-align: center;">
-                <button type="button" class="btn btn-danger" style="padding: 2px 8px; font-size: 0.75rem;" onclick="voidConsolidatedItems('${uuidListStr}')">Void</button>
-            </td>
-        </tr>`;
-        tbody.innerHTML += row;
-    });
+        async function syncVoidAuditLogs() {
+            if (!navigator.onLine) return;
 
-    document.getElementById('pendingCount').innerText = `${unsyncedCount} Unsynced`;
-}
+            const pendingVoids = JSON.parse(localStorage.getItem('pending_voids')) || [];
+            if (pendingVoids.length === 0) return;
 
-// Handler to void all UUIDs tied to a consolidated row
-async function voidConsolidatedItems(uuidString) {
-    const uuids = uuidString.split(',');
-    for (const uuid of uuids) {
-        await voidTransactionItem(uuid);
-    }
-}
-async function syncOfflineOrders() {
+            try {
+                const res = await fetch("https://excel-lite.onrender.com/api/v1/sync/voids", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(pendingVoids)
+                });
+
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result.synced_void_uuids) {
+                        const remaining = pendingVoids.filter(v => !result.synced_void_uuids.includes(v.client_uuid));
+                        localStorage.setItem('pending_voids', JSON.stringify(remaining));
+                        console.log("Void audit log successfully synced to Supabase!");
+                    }
+                }
+            } catch (err) {
+                console.log("Backend offline; void audit logs queued locally.");
+            }
+        }
+
+        async function syncOfflineOrders() {
             if (!navigator.onLine) {
                 document.getElementById('networkStatus').className = 'status-badge status-offline';
                 document.getElementById('networkStatus').innerText = '● Offline Mode';
@@ -632,26 +678,24 @@ async function syncOfflineOrders() {
         }
 
         async function printReceipt() {
-    // Flatten selected UUIDs from consolidated rows
-    const selected = Array.from(document.querySelectorAll('.item-checkbox:checked'))
-        .flatMap(cb => cb.value.split(','));
-        
-    const transactions = await getLocalOrders();
-    const itemsToPrint = transactions.filter(t => selected.includes(t.client_uuid));
+            activeReceiptPrinted = true;
 
-    if (itemsToPrint.length === 0) {
-        alert("Select items using checkboxes to print receipt.");
-        return;
-    }
+            const selected = Array.from(document.querySelectorAll('.item-checkbox:checked'))
+                .flatMap(cb => cb.value.split(','));
 
-    // ... rest of your printReceipt() function remains unchanged ...
+            const transactions = await getLocalOrders();
+            const itemsToPrint = transactions.filter(t => selected.includes(t.client_uuid));
+
+            if (itemsToPrint.length === 0) {
+                alert("Select items using checkboxes to print receipt.");
+                return;
+            }
 
             document.getElementById('receiptStoreName').innerText = storeSettings.storeName;
             document.getElementById('receiptStoreAddress').innerText = storeSettings.storeAddress;
             document.getElementById('receiptCashier').innerText = "Cashier: " + storeSettings.salesPerson;
             document.getElementById('receiptDate').innerText = "Date: " + new Date().toLocaleString();
 
-            // Aggregation: Consolidate identical selected items into a single line
             const consolidatedMap = {};
             let grandTotal = 0;
 
@@ -686,114 +730,15 @@ async function syncOfflineOrders() {
             document.getElementById('receiptGrandTotal').innerText = `₦${grandTotal.toFixed(2)}`;
             window.print();
         }
-// Track whether receipt was printed for active buffer items
-let activeReceiptPrinted = false;
 
-// Override printReceipt to mark items as printed before firing dialog
-const originalPrintReceipt = printReceipt;
-printReceipt = async function() {
-    activeReceiptPrinted = true;
-    await originalPrintReceipt();
-};
-
-async function voidTransactionItem(clientUuid) {
-    const db = await openIndexedDB();
-    const tx = db.transaction("orders", "readwrite");
-    const store = tx.objectStore("orders");
-
-    const item = await new Promise((res) => {
-        const req = store.get(clientUuid);
-        req.onsuccess = () => res(req.result);
-    });
-
-    if (!item) return;
-
-    const confirmMsg = item.synced === 1 
-        ? `Item "${item.item_name}" is already synced. Voiding will record a manager audit log. Proceed?` 
-        : `Void "${item.item_name}" from transaction list?`;
-
-    if (confirm(confirmMsg)) {
-        // Construct Void Audit Record
-        const voidRecord = {
-            client_uuid: item.client_uuid,
-            receipt_number: item.receipt_number,
-            item_name: item.item_name,
-            category: item.category || 'General',
-            quantity: item.quantity,
-            price: item.price,
-            grand_total: item.grand_total,
-            cashier_name: storeSettings.salesPerson || 'Admin',
-            receipt_printed: activeReceiptPrinted,
-            voided_at: new Date().toISOString(),
-            synced: 0
-        };
-
-        // Save to Local Void Queue (for offline sync)
-        localStorage.setItem('pending_voids', JSON.stringify([
-            ...JSON.parse(localStorage.getItem('pending_voids') || '[]'),
-            voidRecord
-        ]));
-
-        // Remove from active cart/order buffer
-        await store.delete(clientUuid);
-
-        renderTable();
-        syncVoidAuditLogs();
-    }
-}
-
-// Background sync for void audit records
-async function syncVoidAuditLogs() {
-    if (!navigator.onLine) return;
-
-    const pendingVoids = JSON.parse(localStorage.getItem('pending_voids')) || [];
-    if (pendingVoids.length === 0) return;
-
-    try {
-        const res = await fetch("https://excel-lite.onrender.com/api/v1/sync/voids", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(pendingVoids)
-        });
-
-        if (res.ok) {
-            const result = await res.json();
-            if (result.synced_void_uuids) {
-                const remaining = pendingVoids.filter(v => !result.synced_void_uuids.includes(v.client_uuid));
-                localStorage.setItem('pending_voids', JSON.stringify(remaining));
-                console.log("Void audit log successfully synced to Supabase!");
-            }
-        }
-    } catch (err) {
-        console.log("Backend offline; void audit logs queued locally.");
-    }
-}
         async function clearLocalBuffer() {
-    const db = await openIndexedDB();
-    const tx = db.transaction("orders", "readwrite");
-    const store = tx.objectStore("orders");
-    const index = store.index("synced");
+            const db = await openIndexedDB();
+            const tx = db.transaction("orders", "readwrite");
+            tx.objectStore("orders").clear();
+            await new Promise((res) => tx.oncomplete = res);
+            renderTable();
+        }
 
-    // Fetch all synced orders (synced === 1)
-    const syncedOrders = await new Promise((res) => {
-        const req = index.getAll(1);
-        req.onsuccess = () => res(req.result || []);
-    });
-
-    if (syncedOrders.length === 0) {
-        alert("No synced transactions to clear. Unsynced orders have been preserved!");
-        return;
-    }
-
-    if (confirm(`Clear ${syncedOrders.length} synced transactions from local view? (Unsynced orders will NOT be deleted)`)) {
-        syncedOrders.forEach(order => {
-            store.delete(order.client_uuid);
-        });
-        
-        await new Promise((res) => tx.oncomplete = res);
-        renderTable();
-    }
-}
         window.addEventListener('keydown', (e) => {
             if (e.key === 'F2') {
                 e.preventDefault();
@@ -801,14 +746,31 @@ async function syncVoidAuditLogs() {
             }
         });
 
-        window.addEventListener("online", syncOfflineOrders);
-        window.addEventListener("offline", syncOfflineOrders);
+        window.addEventListener("online", () => {
+            syncOfflineOrders();
+            syncVoidAuditLogs();
+        });
+        window.addEventListener("offline", () => {
+            syncOfflineOrders();
+            syncVoidAuditLogs();
+        });
 
-        // Single Unified App Initialization
-        window.onload = async () => {
-    loadStoreSettingsUI();
+      // 1. Add the missing UI setting loader function
+function loadStoreSettingsUI() {
+    const nameInput = document.getElementById('storeName');
+    const addrInput = document.getElementById('storeAddress');
+    const salesInput = document.getElementById('salesPerson');
+
+    if (nameInput) nameInput.value = storeSettings.storeName || '';
+    if (addrInput) addrInput.value = storeSettings.storeAddress || '';
+    if (salesInput) salesInput.value = storeSettings.salesPerson || '';
+}
+
+// 2. Main App Load Handler
+window.onload = async () => {
+    loadStoreSettingsUI(); // Now defined properly
     renderTable();
-    await refreshProductCatalog();
+    await refreshProductCatalog(); // Will now execute successfully!
     syncOfflineOrders();
     syncVoidAuditLogs();
     setInterval(() => {
